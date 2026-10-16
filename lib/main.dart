@@ -1,456 +1,668 @@
+
 import 'package:flutter/material.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-void main() {
-  runApp(const SchoolBooksApp());
-}
+void main() => runApp(const IraqiBooksApp());
 
-class SchoolBooksApp extends StatelessWidget {
-  const SchoolBooksApp({super.key});
+const green = Color(0xFF087F72);
+const ink = Color(0xFF18302E);
+const canvas = Color(0xFFF5F8F8);
+
+class IraqiBooksApp extends StatelessWidget {
+  const IraqiBooksApp({super.key});
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'مكتبة المناهج العراقية الذكية',
+      title: 'مكتبة المناهج العراقية',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF00796B),
-          primary: const Color(0xFF00796B),
-          secondary: const Color(0xFF009688),
+        colorScheme: ColorScheme.fromSeed(seedColor: green),
+        scaffoldBackgroundColor: canvas,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: green,
+          foregroundColor: Colors.white,
+          centerTitle: true,
         ),
-        fontFamily: 'Cairo',
-        scaffoldBackgroundColor: const Color(0xFFF4F6F8),
+        fontFamily: 'Roboto',
       ),
-      locale: const Locale('ar', 'IQ'),
-      builder: (context, child) {
-        return Directionality(
-          textDirection: TextDirection.rtl,
-          child: child!,
-        );
-      },
-      home: const MainHomeScreen(),
+      home: const Directionality(
+        textDirection: TextDirection.rtl,
+        child: HomeScreen(),
+      ),
     );
   }
 }
 
-// ==========================================
-// 1. نماذج البيانات (Data Models)
-// ==========================================
-class Subject {
-  final String title;
-  final String stageName;
-  final String className;
-  final String bookUrl;
-  final String fileSize;
-  bool isFavorite;
-
-  Subject({
+class SchoolSubject {
+  SchoolSubject({
     required this.title,
-    required this.stageName,
-    required this.className,
-    required this.bookUrl,
-    required this.fileSize,
+    required this.stage,
+    required this.grade,
+    this.url = '',
     this.isFavorite = false,
   });
+
+  final String title;
+  final String stage;
+  final String grade;
+  final String url;
+  bool isFavorite;
 }
 
-class SchoolClass {
-  final String name;
-  final List<Subject> subjects;
+class SchoolGrade {
+  SchoolGrade({
+    required this.title,
+    required this.stage,
+    required this.number,
+    required this.color,
+    required this.subjects,
+  });
 
-  SchoolClass({required this.name, required this.subjects});
-}
-
-class Stage {
-  final String name;
-  final String icon;
+  final String title;
+  final String stage;
+  final int number;
   final Color color;
-  final List<SchoolClass> classes;
+  final List<SchoolSubject> subjects;
+}
 
-  Stage({
-    required this.name,
+class SchoolStage {
+  SchoolStage({
+    required this.title,
+    required this.subtitle,
     required this.icon,
     required this.color,
-    required this.classes,
+    required this.grades,
   });
+
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final Color color;
+  final List<SchoolGrade> grades;
 }
 
-// ==========================================
-// 2. دالة فتح روابط الكتب المخصصة
-// ==========================================
-Future<void> openOrDownloadBook(BuildContext context, String url, String bookTitle) async {
+List<SchoolSubject> makeSubjects(
+  String stage,
+  String grade,
+  List<String> titles, {
+  Map<String, String> links = const {},
+}) {
+  return titles
+      .map((title) => SchoolSubject(
+            title: title,
+            stage: stage,
+            grade: grade,
+            url: links[title] ?? '',
+          ))
+      .toList();
+}
+
+const primarySubjects = [
+  'التربية الإسلامية',
+  'اللغة العربية',
+  'الرياضيات',
+  'العلوم',
+  'الاجتماعيات',
+  'اللغة الإنكليزية',
+];
+
+const middleSubjects = [
+  'التربية الإسلامية',
+  'اللغة العربية',
+  'الرياضيات',
+  'العلوم',
+  'الاجتماعيات',
+  'اللغة الإنكليزية',
+  'الحاسوب',
+];
+
+const scienceSubjects = [
+  'التربية الإسلامية',
+  'اللغة العربية',
+  'اللغة الإنكليزية',
+  'الرياضيات',
+  'الفيزياء',
+  'الكيمياء',
+  'الأحياء',
+  'الحاسوب',
+];
+
+const literarySubjects = [
+  'التربية الإسلامية',
+  'اللغة العربية',
+  'اللغة الإنكليزية',
+  'التاريخ',
+  'الجغرافية',
+  'الرياضيات',
+  'الأدب والنصوص',
+  'الحاسوب',
+];
+
+SchoolGrade makeGrade(
+  String stage,
+  String title,
+  int number,
+  Color color,
+  List<String> subjects,
+) {
+  return SchoolGrade(
+    title: title,
+    stage: stage,
+    number: number,
+    color: color,
+    subjects: makeSubjects(stage, title, subjects),
+  );
+}
+
+final List<SchoolStage> schoolStages = [
+  SchoolStage(
+    title: 'المرحلة الابتدائية',
+    subtitle: 'من الصف الأول إلى الصف السادس',
+    icon: Icons.backpack_rounded,
+    color: const Color(0xFFF0A72E),
+    grades: [
+      SchoolGrade(
+        title: 'الصف الأول الابتدائي',
+        stage: 'الابتدائية',
+        number: 1,
+        color: const Color(0xFFF0A72E),
+        subjects: makeSubjects(
+          'الابتدائية',
+          'الأول الابتدائي',
+          [
+            'القرآن الكريم والتربية الإسلامية',
+            'قراءتي (اللغة العربية)',
+            'كتاب نشاط القراءة (التمرينات)',
+            'اللغة الإنكليزية (كتاب الطالب والنشاط)',
+            'الرياضيات (كتاب التلميذ والتمرينات)',
+            'العلوم (كتاب التلميذ والنشاط)',
+            'التربية الأخلاقية',
+          ],
+          links: {
+            'القرآن الكريم والتربية الإسلامية':
+                'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/view?usp=sharing',
+            'قراءتي (اللغة العربية)': 'https://mlazemna.com/1bpr19/',
+            'كتاب نشاط القراءة (التمرينات)':
+                'https://mlazemna.com/mbkyarn/',
+            'اللغة الإنكليزية (كتاب الطالب والنشاط)':
+                'https://mlazemna.com/bk1pr/',
+            'الرياضيات (كتاب التلميذ والتمرينات)':
+                'https://mlazemna.com/bk1pr/',
+            'العلوم (كتاب التلميذ والنشاط)':
+                'https://mlazemna.com/bk1pr/',
+            'التربية الأخلاقية': 'https://mlazemna.com/1bpr19/',
+          },
+        ),
+      ),
+      makeGrade('الابتدائية', 'الصف الثاني الابتدائي', 2,
+          const Color(0xFFF0A72E), primarySubjects),
+      makeGrade('الابتدائية', 'الصف الثالث الابتدائي', 3,
+          const Color(0xFFF0A72E), middleSubjects),
+      makeGrade('الابتدائية', 'الصف الرابع الابتدائي', 4,
+          const Color(0xFFF0A72E), middleSubjects),
+      makeGrade('الابتدائية', 'الصف الخامس الابتدائي', 5,
+          const Color(0xFFF0A72E), middleSubjects),
+      makeGrade('الابتدائية', 'الصف السادس الابتدائي', 6,
+          const Color(0xFFF0A72E), middleSubjects),
+    ],
+  ),
+  SchoolStage(
+    title: 'المرحلة المتوسطة',
+    subtitle: 'من الصف الأول إلى الصف الثالث',
+    icon: Icons.menu_book_rounded,
+    color: const Color(0xFF168C83),
+    grades: [
+      makeGrade('المتوسطة', 'الصف الأول المتوسط', 1,
+          const Color(0xFF168C83), middleSubjects),
+      makeGrade(
+        'المتوسطة',
+        'الصف الثاني المتوسط',
+        2,
+        const Color(0xFF168C83),
+        [
+          'التربية الإسلامية',
+          'اللغة العربية',
+          'الرياضيات',
+          'الفيزياء',
+          'الكيمياء',
+          'الأحياء',
+          'الاجتماعيات',
+          'اللغة الإنكليزية',
+          'الحاسوب',
+        ],
+      ),
+      makeGrade(
+        'المتوسطة',
+        'الصف الثالث المتوسط',
+        3,
+        const Color(0xFF168C83),
+        [
+          'التربية الإسلامية',
+          'اللغة العربية',
+          'الرياضيات',
+          'الفيزياء',
+          'الكيمياء',
+          'الأحياء',
+          'الاجتماعيات',
+          'اللغة الإنكليزية',
+          'الحاسوب',
+        ],
+      ),
+    ],
+  ),
+  SchoolStage(
+    title: 'الإعدادية — الفرع العلمي',
+    subtitle: 'الرابع والخامس والسادس العلمي',
+    icon: Icons.science_rounded,
+    color: const Color(0xFF5368C8),
+    grades: [
+      makeGrade('الإعدادية / العلمي', 'الصف الرابع الإعدادي — العلمي',
+          4, const Color(0xFF5368C8), scienceSubjects),
+      makeGrade('الإعدادية / العلمي', 'الصف الخامس الإعدادي — العلمي',
+          5, const Color(0xFF5368C8), scienceSubjects),
+      makeGrade('الإعدادية / العلمي', 'الصف السادس الإعدادي — العلمي',
+          6, const Color(0xFF5368C8), scienceSubjects),
+    ],
+  ),
+  SchoolStage(
+    title: 'الإعدادية — الفرع الأدبي',
+    subtitle: 'الرابع والخامس والسادس الأدبي',
+    icon: Icons.auto_stories_rounded,
+    color: const Color(0xFF8654B7),
+    grades: [
+      makeGrade('الإعدادية / الأدبي', 'الصف الرابع الإعدادي — الأدبي',
+          4, const Color(0xFF8654B7), literarySubjects),
+      makeGrade('الإعدادية / الأدبي', 'الصف الخامس الإعدادي — الأدبي',
+          5,
+          const Color(0xFF8654B7),
+          [
+            'التربية الإسلامية',
+            'اللغة العربية',
+            'اللغة الإنكليزية',
+            'التاريخ الحديث والمعاصر',
+            'الجغرافية البشرية والاقتصادية',
+            'الرياضيات',
+            'الأدب والنصوص',
+            'الحاسوب',
+          ]),
+      makeGrade('الإعدادية / الأدبي', 'الصف السادس الإعدادي — الأدبي',
+          6, const Color(0xFF8654B7), literarySubjects),
+    ],
+  ),
+];
+
+List<SchoolSubject> get allSubjects => schoolStages
+    .expand((stage) => stage.grades)
+    .expand((grade) => grade.subjects)
+    .toList();
+
+void showBookLink(
+  BuildContext context,
+  SchoolSubject subject, {
+  bool download = false,
+}) {
+  final url = subject.url.trim();
+
   if (url.isEmpty) {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
-        content: Text('عذراً، لم يتم إضافة رابط هذا الكتاب بعد!'),
-        backgroundColor: Colors.orange,
+        content: Text('رابط هذا الكتاب غير متوفر حالياً.'),
       ),
     );
     return;
   }
 
-  final Uri uri = Uri.parse(url);
-  if (await canLaunchUrl(uri)) {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
-  } else {
+  final uri = Uri.tryParse(url);
+  if (uri == null ||
+      !uri.hasAuthority ||
+      (uri.scheme != 'https' && uri.scheme != 'http')) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('تعذر فتح رابط كتاب: $bookTitle'),
-        backgroundColor: Colors.red,
-      ),
+      const SnackBar(content: Text('رابط الكتاب غير صالح.')),
     );
+    return;
   }
+
+  showDialog<void>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(download ? 'رابط تحميل الكتاب' : 'عرض الكتاب'),
+      content: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(subject.title),
+            const SizedBox(height: 12),
+            const Text('انسخ الرابط وافتحه في المتصفح:'),
+            const SizedBox(height: 12),
+            SelectableText(
+              url,
+              textDirection: TextDirection.ltr,
+              style: const TextStyle(color: Colors.blue),
+            ),
+          ],
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.pop(dialogContext),
+          child: const Text('إغلاق'),
+        ),
+      ],
+    ),
+  );
 }
 
-// ==========================================
-// 3. البيانات الشاملة مع الروابط المخصصة لكل كتاب
-// ==========================================
-final List<Stage> educationalStages = [
-  Stage(
-    name: 'المرحلة الابتدائية',
-    icon: '🎒',
-    color: Colors.amber,
-    classes: [
-      SchoolClass(name: 'الصف الأول الابتدائي', subjects: [
-        Subject(
-          title: 'القرآن الكريم والتربية الإسلامية',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://drive.google.com/uc?export=download&id=11yKmb-5gvVC15RIznlr7Hyp9RAPab5YK',
-          fileSize: '15 MB',
-        ),
-        Subject(
-          title: 'قراءتي (اللغة العربية)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/1bpr19/',
-          fileSize: '18 MB',
-        ),
-        Subject(
-          title: 'كتاب نشاط القراءة (التمرينات)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/mbkyarn/',
-          fileSize: '4.1 MB',
-        ),
-        Subject(
-          title: 'اللغة الإنكليزية (كتاب الطالب والنشاط)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/bk1pr/',
-          fileSize: '22 MB',
-        ),
-        Subject(
-          title: 'الرياضيات (كتاب التلميذ والتمرينات)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/bk1pr/',
-          fileSize: '16 MB',
-        ),
-        Subject(
-          title: 'العلوم (كتاب التلميذ والنشاط)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/bk1pr/',
-          fileSize: '20 MB',
-        ),
-        Subject(
-          title: 'التربية الأخلاقية (المنهج الجديد)',
-          stageName: 'الابتدائية',
-          className: 'الأول الابتدائي',
-          bookUrl: 'https://mlazemna.com/1bpr19/',
-          fileSize: '14 MB',
-        ),
-      ]),
-      SchoolClass(name: 'الصف الثاني الابتدائي', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'الابتدائية', className: 'الثاني الابتدائي', bookUrl: '', fileSize: '13 MB'),
-        Subject(title: 'القراءة', stageName: 'الابتدائية', className: 'الثاني الابتدائي', bookUrl: '', fileSize: '19 MB'),
-        Subject(title: 'الرياضيات', stageName: 'الابتدائية', className: 'الثاني الابتدائي', bookUrl: '', fileSize: '16 MB'),
-      ]),
-      SchoolClass(name: 'الصف الثالث الابتدائي', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'الابتدائية', className: 'الثالث الابتدائي', bookUrl: '', fileSize: '14 MB'),
-        Subject(title: 'اللغة العربية والقراءة', stageName: 'الابتدائية', className: 'الثالث الابتدائي', bookUrl: '', fileSize: '20 MB'),
-        Subject(title: 'الرياضيات', stageName: 'الابتدائية', className: 'الثالث الابتدائي', bookUrl: '', fileSize: '17 MB'),
-        Subject(title: 'العلوم', stageName: 'الابتدائية', className: 'الثالث الابتدائي', bookUrl: '', fileSize: '21 MB'),
-      ]),
-      SchoolClass(name: 'الصف الرابع الابتدائي', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'الابتدائية', className: 'الرابع الابتدائي', bookUrl: '', fileSize: '14 MB'),
-        Subject(title: 'اللغة العربية', stageName: 'الابتدائية', className: 'الرابع الابتدائي', bookUrl: '', fileSize: '21 MB'),
-        Subject(title: 'الرياضيات', stageName: 'الابتدائية', className: 'الرابع الابتدائي', bookUrl: '', fileSize: '18 MB'),
-        Subject(title: 'العلوم', stageName: 'الابتدائية', className: 'الرابع الابتدائي', bookUrl: '', fileSize: '22 MB'),
-        Subject(title: 'الاجتماعيات', stageName: 'الابتدائية', className: 'الرابع الابتدائي', bookUrl: '', fileSize: '15 MB'),
-      ]),
-      SchoolClass(name: 'الصف الخامس الابتدائي', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '14 MB'),
-        Subject(title: 'اللغة العربية', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '22 MB'),
-        Subject(title: 'الرياضيات', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '19 MB'),
-        Subject(title: 'العلوم', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '23 MB'),
-        Subject(title: 'الاجتماعيات', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '16 MB'),
-        Subject(title: 'اللغة الإنجليزية', stageName: 'الابتدائية', className: 'الخامس الابتدائي', bookUrl: '', fileSize: '25 MB'),
-      ]),
-      SchoolClass(name: 'الصف السادس الابتدائي', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '15 MB'),
-        Subject(title: 'اللغة العربية', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '24 MB'),
-        Subject(title: 'الرياضيات', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '20 MB'),
-        Subject(title: 'العلوم', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '25 MB'),
-        Subject(title: 'الاجتماعيات', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '18 MB'),
-        Subject(title: 'اللغة الإنجليزية', stageName: 'الابتدائية', className: 'السادس الابتدائي', bookUrl: '', fileSize: '28 MB'),
-      ]),
-    ],
-  ),
-  Stage(
-    name: 'المرحلة المتوسطة',
-    icon: '📖',
-    color: Colors.teal,
-    classes: [
-      SchoolClass(name: 'الصف الأول المتوسط', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '14 MB'),
-        Subject(title: 'قواعد اللغة العربية', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '18 MB'),
-        Subject(title: 'الرياضيات', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '26 MB'),
-        Subject(title: 'الأحياء', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '19 MB'),
-        Subject(title: 'الاجتماعيات', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '17 MB'),
-        Subject(title: 'اللغة الإنجليزية', stageName: 'المتوسطة', className: 'الأول المتوسط', bookUrl: '', fileSize: '30 MB'),
-      ]),
-      SchoolClass(name: 'الصف الثاني المتوسط', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '14 MB'),
-        Subject(title: 'قواعد اللغة العربية', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '19 MB'),
-        Subject(title: 'الرياضيات', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '27 MB'),
-        Subject(title: 'الفيزياء', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '20 MB'),
-        Subject(title: 'الكيمياء', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '17 MB'),
-        Subject(title: 'الأحياء', stageName: 'المتوسطة', className: 'الثاني المتوسط', bookUrl: '', fileSize: '21 MB'),
-      ]),
-      SchoolClass(name: 'الصف الثالث المتوسط', subjects: [
-        Subject(title: 'التربية الإسلامية', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '15 MB'),
-        Subject(title: 'قواعد اللغة العربية', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '22 MB'),
-        Subject(title: 'الرياضيات', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '28 MB'),
-        Subject(title: 'الفيزياء', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '22 MB'),
-        Subject(title: 'الكيمياء', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '19 MB'),
-        Subject(title: 'الأحياء', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '24 MB'),
-        Subject(title: 'اللغة الإنجليزية', stageName: 'المتوسطة', className: 'الثالث المتوسط', bookUrl: '', fileSize: '32 MB'),
-      ]),
-    ],
-  ),
-  Stage(
-    name: 'المرحلة الاعدادية (الفرع العلمي)',
-    icon: '🔬',
-    color: Colors.indigo,
-    classes: [
-      SchoolClass(name: 'الصف الرابع الاعدادي (العلمي)', subjects: [
-        Subject(title: 'الرياضيات (العلمي)', stageName: 'الاعدادية - العلمي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '28 MB'),
-        Subject(title: 'الفيزياء', stageName: 'الاعدادية - العلمي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '24 MB'),
-        Subject(title: 'الكيمياء', stageName: 'الاعدادية - العلمي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '21 MB'),
-        Subject(title: 'الأحياء', stageName: 'الاعدادية - العلمي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '25 MB'),
-      ]),
-      SchoolClass(name: 'الصف الخامس الاعدادي (العلمي)', subjects: [
-        Subject(title: 'الرياضيات (العلمي)', stageName: 'الاعدادية - العلمي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '30 MB'),
-        Subject(title: 'الفيزياء', stageName: 'الاعدادية - العلمي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '26 MB'),
-        Subject(title: 'الكيمياء', stageName: 'الاعدادية - العلمي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '23 MB'),
-        Subject(title: 'الأحياء', stageName: 'الاعدادية - العلمي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '28 MB'),
-      ]),
-      SchoolClass(name: 'الصف السادس الاعدادي (العلمي)', subjects: [
-        Subject(title: 'الرياضيات (السادس العلمي)', stageName: 'الاعدادية - العلمي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '35 MB'),
-        Subject(title: 'الفيزياء', stageName: 'الاعدادية - العلمي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '29 MB'),
-        Subject(title: 'الكيمياء', stageName: 'الاعدادية - العلمي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '25 MB'),
-        Subject(title: 'الأحياء (الإحيائي)', stageName: 'الاعدادية - العلمي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '31 MB'),
-      ]),
-    ],
-  ),
-  Stage(
-    name: 'المرحلة الاعدادية (الفرع الأدبي)',
-    icon: '📚',
-    color: Colors.deepPurple,
-    classes: [
-      SchoolClass(name: 'الصف الرابع الاعدادي (الأدبي)', subjects: [
-        Subject(title: 'التاريخ', stageName: 'الاعدادية - الأدبي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '20 MB'),
-        Subject(title: 'الجغرافية', stageName: 'الاعدادية - الأدبي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '22 MB'),
-        Subject(title: 'قواعد اللغة العربية', stageName: 'الاعدادية - الأدبي', className: 'الرابع الاعدادي', bookUrl: '', fileSize: '19 MB'),
-      ]),
-      SchoolClass(name: 'الصف الخامس الاعدادي (الأدبي)', subjects: [
-        Subject(title: 'التاريخ الحديث والمعاصر', stageName: 'الاعدادية - الأدبي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '23 MB'),
-        Subject(title: 'الجغرافية البشرية والاقتصادية', stageName: 'الاعدادية - الأدبي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '25 MB'),
-        Subject(title: 'الادب والنصوص', stageName: 'الاعدادية - الأدبي', className: 'الخامس الاعدادي', bookUrl: '', fileSize: '21 MB'),
-      ]),
-      SchoolClass(name: 'الصف السادس الاعدادي (الأدبي)', subjects: [
-        Subject(title: 'التاريخ (السادس الأدبي)', stageName: 'الاعدادية - الأدبي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '28 MB'),
-        Subject(title: 'الجغرافية (السادس الأدبي)', stageName: 'الاعدادية - الأدبي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '26 MB'),
-        Subject(title: 'الادب والنصوص (السادس الأدبي)', stageName: 'الاعدادية - الأدبي', className: 'السادس الاعدادي', bookUrl: '', fileSize: '24 MB'),
-      ]),
-    ],
-  ),
-];
-
-// ==========================================
-// 4. الشاشة الرئيسية والتبويبات
-// ==========================================
-class MainHomeScreen extends StatefulWidget {
-  const MainHomeScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<MainHomeScreen> createState() => _MainHomeScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MainHomeScreenState extends State<MainHomeScreen> {
-  int _currentIndex = 0;
-  
-  List<Subject> get allSubjects {
-    List<Subject> list = [];
-    for (var stage in educationalStages) {
-      for (var c in stage.classes) {
-        list.addAll(c.subjects);
-      }
-    }
-    return list;
+class _HomeScreenState extends State<HomeScreen> {
+  int tab = 0;
+  String query = '';
+  final TextEditingController searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    searchController.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final List<Widget> screens = [
-      const StagesHomeTab(),
-      FavoritesTab(subjects: allSubjects),
-    ];
+    final results = allSubjects.where((subject) {
+      final text =
+          '${subject.title} ${subject.grade} ${subject.stage}'.toLowerCase();
+      return text.contains(query.trim().toLowerCase());
+    }).toList();
 
-    return Scaffold(
-      body: screens[_currentIndex],
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _currentIndex,
-        onDestinationSelected: (index) {
-          setState(() {
-            _currentIndex = index;
-          });
-        },
-        destinations: const [
-          NavigationDestination(icon: Icon(Icons.home_outlined), selectedIcon: Icon(Icons.home), label: 'الرئيسية'),
-          NavigationDestination(icon: Icon(Icons.favorite_outline), selectedIcon: Icon(Icons.favorite, color: Colors.red), label: 'المفضلة'),
-        ],
-      ),
-    );
-  }
-}
-
-class StagesHomeTab extends StatelessWidget {
-  const StagesHomeTab({super.key});
-
-  @override
-  Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('مكتبة المناهج العراقية', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF00796B),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.search, color: Colors.white),
-            onPressed: () {
-              List<Subject> all = [];
-              for (var s in educationalStages) {
-                for (var c in s.classes) {
-                  all.addAll(c.subjects);
-                }
-              }
-              showSearch(context: context, delegate: BookSearchDelegate(allSubjects: all));
-            },
-          )
+        title: const Text(
+          'مكتبة المناهج العراقية',
+          style: TextStyle(fontWeight: FontWeight.w800),
+        ),
+      ),
+      body: tab == 0
+          ? homeContent(results)
+          : favoritesContent(),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: tab,
+        onDestinationSelected: (index) => setState(() => tab = index),
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'الرئيسية',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.favorite_border_rounded),
+            selectedIcon: Icon(Icons.favorite_rounded),
+            label: 'المفضلة',
+          ),
         ],
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(16.0),
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF00796B), Color(0xFF004D40)],
-                begin: Alignment.topRight,
-                end: Alignment.bottomLeft,
-              ),
-              borderRadius: BorderRadius.circular(16),
+    );
+  }
+
+  Widget homeContent(List<SchoolSubject> results) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        Container(
+          padding: const EdgeInsets.all(22),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(
+              colors: [Color(0xFF087F72), Color(0xFF07574F)],
             ),
-            child: const Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text('أهلاً بك عزيزي الطالب 👋', style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.bold)),
-                SizedBox(height: 8),
-                Text('اضغط على أزرار الكتب للوصول إلى صفحات التنزيل المباشرة.', style: TextStyle(color: Colors.white70, fontSize: 14)),
-              ],
+            borderRadius: BorderRadius.circular(24),
+          ),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.school_rounded,
+                  color: Colors.white, size: 36),
+              SizedBox(height: 14),
+              Text(
+                'كل كتبك الدراسية في مكان واحد',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 21,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'اختر مرحلتك وصفك للوصول إلى المواد الدراسية.',
+                style: TextStyle(color: Colors.white70, height: 1.6),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 18),
+        TextField(
+          controller: searchController,
+          onChanged: (value) => setState(() => query = value),
+          decoration: InputDecoration(
+            hintText: 'ابحث عن كتاب أو مادة أو صف...',
+            prefixIcon: const Icon(Icons.search_rounded, color: green),
+            suffixIcon: query.isEmpty
+                ? null
+                : IconButton(
+                    onPressed: () {
+                      searchController.clear();
+                      setState(() => query = '');
+                    },
+                    icon: const Icon(Icons.close),
+                  ),
+            filled: true,
+            fillColor: Colors.white,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(16),
+              borderSide: BorderSide.none,
             ),
           ),
-          const SizedBox(height: 20),
-          const Text('المراحل الدراسية', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 12),
-          ...educationalStages.map((stage) {
-            return Card(
-              elevation: 2,
-              margin: const EdgeInsets.only(bottom: 14),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-              child: InkWell(
-                borderRadius: BorderRadius.circular(14),
-                onTap: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => ClassesScreen(stage: stage)));
-                },
-                child: Padding(
-                  padding: const EdgeInsets.all(18.0),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: stage.color.withOpacity(0.15), borderRadius: BorderRadius.circular(10)),
-                        child: Text(stage.icon, style: const TextStyle(fontSize: 32)),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(stage.name, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('${stage.classes.length} صفوف دراسية متوفرة', style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                          ],
-                        ),
-                      ),
-                      const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-                    ],
+        ),
+        const SizedBox(height: 20),
+        const Text(
+          'المراحل الدراسية',
+          style: TextStyle(
+            fontSize: 19,
+            fontWeight: FontWeight.w800,
+            color: ink,
+          ),
+        ),
+        const SizedBox(height: 12),
+        if (query.isNotEmpty)
+          if (results.isEmpty)
+            const EmptyState(
+              title: 'لا توجد نتائج',
+              subtitle: 'جرّب كلمة بحث مختلفة.',
+              icon: Icons.search_off_rounded,
+            )
+          else
+            ...results.map(
+              (subject) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: SubjectTile(
+                  subject: subject,
+                  onFavorite: () => setState(
+                    () => subject.isFavorite = !subject.isFavorite,
                   ),
                 ),
               ),
-            );
-          }),
-        ],
+            )
+        else
+          ...schoolStages.map(
+            (stage) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: StageCard(
+                stage: stage,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => GradesScreen(stage: stage),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        const SizedBox(height: 8),
+        const Text(
+          'تنبيه: قد تختلف الكتب حسب الطبعة والمنهج المعتمد للسنة الدراسية.',
+          style: TextStyle(color: Colors.black54, fontSize: 12),
+        ),
+      ],
+    );
+  }
+
+  Widget favoritesContent() {
+    final favorites =
+        allSubjects.where((subject) => subject.isFavorite).toList();
+
+    if (favorites.isEmpty) {
+      return const EmptyState(
+        icon: Icons.favorite_border_rounded,
+        title: 'قائمة المفضلة فارغة',
+        subtitle: 'اضغط على القلب بجانب أي كتاب لإضافته هنا.',
+      );
+    }
+
+    return ListView.separated(
+      padding: const EdgeInsets.all(16),
+      itemCount: favorites.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 10),
+      itemBuilder: (context, index) => SubjectTile(
+        subject: favorites[index],
+        onFavorite: () => setState(
+          () => favorites[index].isFavorite = false,
+        ),
       ),
     );
   }
 }
 
-class ClassesScreen extends StatelessWidget {
-  final Stage stage;
-  const ClassesScreen({super.key, required this.stage});
+class StageCard extends StatelessWidget {
+  const StageCard({
+    super.key,
+    required this.stage,
+    required this.onTap,
+  });
+
+  final SchoolStage stage;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final subjectCount = stage.grades.fold<int>(
+      0,
+      (sum, grade) => sum + grade.subjects.length,
+    );
+
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: const BorderSide(color: Color(0xFFE6EEEC)),
+      ),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(20),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: stage.color.withOpacity(0.13),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(stage.icon, color: stage.color, size: 30),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      stage.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        color: ink,
+                      ),
+                    ),
+                    const SizedBox(height: 5),
+                    Text(
+                      stage.subtitle,
+                      style: const TextStyle(
+                        color: Colors.black54,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 7),
+                    Text(
+                      '${stage.grades.length} صفوف • $subjectCount مادة',
+                      style: TextStyle(
+                        color: stage.color,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_left_rounded),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class GradesScreen extends StatelessWidget {
+  const GradesScreen({super.key, required this.stage});
+
+  final SchoolStage stage;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(stage.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: const Color(0xFF00796B),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ListView.builder(
+      appBar: AppBar(title: Text(stage.title)),
+      body: ListView.separated(
         padding: const EdgeInsets.all(16),
-        itemCount: stage.classes.length,
+        itemCount: stage.grades.length,
+        separatorBuilder: (_, __) => const SizedBox(height: 10),
         itemBuilder: (context, index) {
-          final c = stage.classes[index];
+          final grade = stage.grades[index];
+
           return Card(
-            elevation: 1,
-            margin: const EdgeInsets.only(bottom: 12),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            color: Colors.white,
             child: ListTile(
-              leading: const Icon(Icons.menu_book, color: Color(0xFF00796B)),
-              title: Text(c.name, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-              trailing: const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => SubjectsScreen(schoolClass: c)));
-              },
+              leading: CircleAvatar(
+                backgroundColor: grade.color.withOpacity(0.13),
+                foregroundColor: grade.color,
+                child: Text('${grade.number}'),
+              ),
+              title: Text(
+                grade.title,
+                style: const TextStyle(fontWeight: FontWeight.w800),
+              ),
+              subtitle: Text('${grade.subjects.length} مواد دراسية'),
+              trailing: const Icon(Icons.chevron_left_rounded),
+              onTap: () => Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => SubjectsScreen(grade: grade),
+                ),
+              ),
             ),
           );
         },
@@ -460,207 +672,236 @@ class ClassesScreen extends StatelessWidget {
 }
 
 class SubjectsScreen extends StatefulWidget {
-  final SchoolClass schoolClass;
-  const SubjectsScreen({super.key, required this.schoolClass});
+  const SubjectsScreen({super.key, required this.grade});
+
+  final SchoolGrade grade;
 
   @override
   State<SubjectsScreen> createState() => _SubjectsScreenState();
 }
 
 class _SubjectsScreenState extends State<SubjectsScreen> {
+  String filter = '';
+
   @override
   Widget build(BuildContext context) {
+    final subjects = widget.grade.subjects
+        .where((subject) =>
+            subject.title.toLowerCase().contains(filter.toLowerCase()))
+        .toList();
+
     return Scaffold(
-      appBar: AppBar(
-        title: Text(widget.schoolClass.name, style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        backgroundColor: const Color(0xFF00796B),
-        iconTheme: const IconThemeData(color: Colors.white),
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: widget.schoolClass.subjects.length,
-        itemBuilder: (context, index) {
-          final subject = widget.schoolClass.subjects[index];
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(color: const Color(0xFF00796B).withOpacity(0.1), borderRadius: BorderRadius.circular(10)),
-                        child: const Icon(Icons.picture_as_pdf, color: Color(0xFF00796B), size: 26),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(subject.title, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                            const SizedBox(height: 4),
-                            Text('الحجم: ${subject.fileSize}', style: const TextStyle(color: Colors.grey, fontSize: 12)),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(subject.isFavorite ? Icons.favorite : Icons.favorite_border, color: subject.isFavorite ? Colors.red : Colors.grey),
-                        onPressed: () {
-                          setState(() {
-                            subject.isFavorite = !subject.isFavorite;
-                          });
-                        },
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const Divider(height: 1),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: const Color(0xFF00796B),
-                            side: const BorderSide(color: Color(0xFF00796B)),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            openOrDownloadBook(context, subject.bookUrl, subject.title);
-                          },
-                          icon: const Icon(Icons.visibility, size: 18),
-                          label: const Text('قراءة'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: const Color(0xFF00796B),
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                          ),
-                          onPressed: () {
-                            openOrDownloadBook(context, subject.bookUrl, subject.title);
-                          },
-                          icon: const Icon(Icons.download, size: 18),
-                          label: const Text('تحميل'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
+      appBar: AppBar(title: Text(widget.grade.title)),
+      body: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: TextField(
+              onChanged: (value) => setState(() => filter = value),
+              decoration: InputDecoration(
+                hintText: 'ابحث داخل مواد الصف...',
+                prefixIcon: const Icon(Icons.search_rounded),
+                filled: true,
+                fillColor: Colors.white,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  borderSide: BorderSide.none,
+                ),
               ),
             ),
-          );
-        },
+          ),
+          Expanded(
+            child: subjects.isEmpty
+                ? const EmptyState(
+                    icon: Icons.search_off_rounded,
+                    title: 'لا توجد مواد مطابقة',
+                    subtitle: 'غيّر عبارة البحث وحاول مرة أخرى.',
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
+                    itemCount: subjects.length,
+                    separatorBuilder: (_, __) =>
+                        const SizedBox(height: 10),
+                    itemBuilder: (context, index) => SubjectTile(
+                      subject: subjects[index],
+                      onFavorite: () => setState(
+                        () => subjects[index].isFavorite =
+                            !subjects[index].isFavorite,
+                      ),
+                    ),
+                  ),
+          ),
+        ],
       ),
     );
   }
 }
 
-class FavoritesTab extends StatefulWidget {
-  final List<Subject> subjects;
-  const FavoritesTab({super.key, required this.subjects});
+class SubjectTile extends StatelessWidget {
+  const SubjectTile({
+    super.key,
+    required this.subject,
+    required this.onFavorite,
+  });
 
-  @override
-  State<FavoritesTab> createState() => _FavoritesTabState();
-}
+  final SchoolSubject subject;
+  final VoidCallback onFavorite;
 
-class _FavoritesTabState extends State<FavoritesTab> {
   @override
   Widget build(BuildContext context) {
-    final favorites = widget.subjects.where((s) => s.isFavorite).toList();
+    final hasLink = subject.url.isNotEmpty;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('الكتب المفضلة', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-        centerTitle: true,
-        backgroundColor: const Color(0xFF00796B),
+    return Card(
+      color: Colors.white,
+      elevation: 0,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(18),
+        side: const BorderSide(color: Color(0xFFE6EEEC)),
       ),
-      body: favorites.isEmpty
-          ? const Center(child: Text('لا توجد كتب مضافة للمفضلة حتى الآن', style: TextStyle(color: Colors.grey, fontSize: 16)))
-          : ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: favorites.length,
-              itemBuilder: (context, index) {
-                final subject = favorites[index];
-                return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.book, color: Color(0xFF00796B)),
-                    title: Text(subject.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text('${subject.stageName} / ${subject.className}'),
-                    trailing: IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.red),
-                      onPressed: () {
-                        setState(() {
-                          subject.isFavorite = false;
-                        });
-                      },
-                    ),
-                    onTap: () {
-                      openOrDownloadBook(context, subject.bookUrl, subject.title);
-                    },
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: green.withOpacity(0.09),
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                );
-              },
+                  child: const Icon(
+                    Icons.menu_book_rounded,
+                    color: green,
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        subject.title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          color: ink,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${subject.stage} • ${subject.grade}',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 11,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        hasLink
+                            ? 'الرابط متوفر'
+                            : 'الرابط غير متوفر حالياً',
+                        style: TextStyle(
+                          color: hasLink ? green : Colors.orange.shade800,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  tooltip:
+                      subject.isFavorite ? 'إزالة من المفضلة' : 'إضافة للمفضلة',
+                  onPressed: onFavorite,
+                  icon: Icon(
+                    subject.isFavorite
+                        ? Icons.favorite_rounded
+                        : Icons.favorite_border_rounded,
+                    color: subject.isFavorite
+                        ? Colors.redAccent
+                        : Colors.black38,
+                  ),
+                ),
+              ],
             ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: () => showBookLink(context, subject),
+                    icon: const Icon(Icons.visibility_rounded, size: 18),
+                    label: const Text('عرض الكتاب'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: green,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        showBookLink(context, subject, download: true),
+                    icon: const Icon(Icons.download_rounded, size: 18),
+                    label: const Text('تحميل الكتاب'),
+                    style: FilledButton.styleFrom(
+                      backgroundColor: green,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
 
-class BookSearchDelegate extends SearchDelegate<String> {
-  final List<Subject> allSubjects;
-  BookSearchDelegate({required this.allSubjects});
+class EmptyState extends StatelessWidget {
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
 
   @override
-  String get searchFieldLabel => 'ابحث عن أي كتاب دراسي...';
-
-  @override
-  List<Widget> buildActions(BuildContext context) {
-    return [
-      IconButton(icon: const Icon(Icons.clear), onPressed: () => query = ''),
-    ];
-  }
-
-  @override
-  Widget buildLeading(BuildContext context) {
-    return IconButton(icon: const Icon(Icons.arrow_back), onPressed: () => close(context, ''));
-  }
-
-  @override
-  Widget buildResults(BuildContext context) => _buildSearchResults();
-
-  @override
-  Widget buildSuggestions(BuildContext context) => _buildSearchResults();
-
-  Widget _buildSearchResults() {
-    final filtered = allSubjects.where((s) => s.title.toLowerCase().contains(query.toLowerCase())).toList();
-
-    if (filtered.isEmpty) {
-      return const Center(child: Text('لم يتم العثور على أي كتاب مطابق', style: TextStyle(color: Colors.grey)));
-    }
-
-    return ListView.builder(
-      padding: const EdgeInsets.all(16),
-      itemCount: filtered.length,
-      itemBuilder: (context, index) {
-        final subject = filtered[index];
-        return Card(
-          child: ListTile(
-            leading: const Icon(Icons.menu_book, color: Color(0xFF00796B)),
-            title: Text(subject.title, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: Text('${subject.stageName} - ${subject.className}'),
-            onTap: () {
-              openOrDownloadBook(context, subject.bookUrl, subject.title);
-            },
-          ),
-        );
-      },
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(30),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, size: 56, color: green.withOpacity(0.55)),
+            const SizedBox(height: 14),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+                color: ink,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: Colors.black54,
+                height: 1.6,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
