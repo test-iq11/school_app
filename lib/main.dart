@@ -1,11 +1,14 @@
 
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:dio/dio.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:pdfx/pdfx.dart';
 
-void main() => runApp(const IraqiBooksApp());
-
-const green = Color(0xFF087F72);
-const ink = Color(0xFF18302E);
-const canvas = Color(0xFFF5F8F8);
+void main() {
+  runApp(const IraqiBooksApp());
+}
 
 class IraqiBooksApp extends StatelessWidget {
   const IraqiBooksApp({super.key});
@@ -17,12 +20,14 @@ class IraqiBooksApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(seedColor: green),
-        scaffoldBackgroundColor: canvas,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: const Color(0xFF1565C0),
+        ),
+        scaffoldBackgroundColor: const Color(0xFFF5F7FB),
         appBarTheme: const AppBarTheme(
-          backgroundColor: green,
-          foregroundColor: Colors.white,
           centerTitle: true,
+          backgroundColor: Color(0xFF1565C0),
+          foregroundColor: Colors.white,
         ),
       ),
       builder: (context, child) => Directionality(
@@ -34,220 +39,122 @@ class IraqiBooksApp extends StatelessWidget {
   }
 }
 
-class Book {
+class SchoolStage {
   final String name;
-  final String url;
-  bool favorite;
-
-  Book(this.name, {this.url = '', this.favorite = false});
-}
-
-class Grade {
-  final String name;
-  final List<Book> books;
-
-  Grade(this.name, this.books);
-}
-
-class Stage {
-  final String name;
-  final String subtitle;
+  final String description;
   final IconData icon;
-  final Color color;
-  final List<Grade> grades;
+  final List<SchoolGrade> grades;
 
-  Stage({
+  const SchoolStage({
     required this.name,
-    required this.subtitle,
+    required this.description,
     required this.icon,
-    required this.color,
     required this.grades,
   });
 }
 
-Grade makeGrade(String name, List<String> subjects) {
-  return Grade(name, subjects.map((s) => Book(s)).toList());
+class SchoolGrade {
+  final String name;
+  final List<BookSubject> subjects;
+
+  const SchoolGrade({
+    required this.name,
+    required this.subjects,
+  });
 }
 
-const primarySubjects = [
-  'التربية الإسلامية',
+class BookSubject {
+  final String name;
+  final String pdfUrl;
+
+  const BookSubject({
+    required this.name,
+    this.pdfUrl = '',
+  });
+}
+
+// ضع رابط PDF الحقيقي لكل كتاب في pdfUrl.
+// اتركه فارغاً إلى أن يتوفر رابط الكتاب.
+List<BookSubject> makeSubjects(List<String> names) {
+  return names.map((name) => BookSubject(name: name)).toList();
+}
+
+final List<String> primarySubjects = [
+  'القرآن الكريم والتربية الإسلامية',
   'اللغة العربية',
+  'اللغة الإنجليزية',
   'الرياضيات',
   'العلوم',
   'الاجتماعيات',
-  'اللغة الإنكليزية',
 ];
 
-const middleSubjects = [
+final List<String> middleSubjects = [
   'التربية الإسلامية',
   'اللغة العربية',
+  'اللغة الإنجليزية',
   'الرياضيات',
   'العلوم',
   'الاجتماعيات',
-  'اللغة الإنكليزية',
   'الحاسوب',
 ];
 
-const scienceSubjects = [
+final List<String> preparatorySubjects = [
   'التربية الإسلامية',
   'اللغة العربية',
-  'اللغة الإنكليزية',
+  'اللغة الإنجليزية',
   'الرياضيات',
   'الفيزياء',
   'الكيمياء',
   'الأحياء',
-  'الحاسوب',
 ];
 
-const literarySubjects = [
-  'التربية الإسلامية',
-  'اللغة العربية',
-  'اللغة الإنكليزية',
-  'التاريخ',
-  'الجغرافية',
-  'الرياضيات',
-  'الأدب والنصوص',
-  'الحاسوب',
-];
-
-final List<Stage> stages = [
-  Stage(
+final List<SchoolStage> schoolStages = [
+  SchoolStage(
     name: 'المرحلة الابتدائية',
-    subtitle: 'من الصف الأول إلى الصف السادس',
-    icon: Icons.backpack_rounded,
-    color: const Color(0xFFF0A72E),
+    description: 'من الصف الأول إلى الصف السادس',
+    icon: Icons.menu_book,
     grades: [
-      Grade('الصف الأول الابتدائي', [
-        Book('القرآن الكريم والتربية الإسلامية',
-            url: 'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/view?usp=sharing'),
-        Book('قراءتي (اللغة العربية)',
-            url: 'https://mlazemna.com/1bpr19/'),
-        Book('كتاب نشاط القراءة (التمرينات)',
-            url: 'https://mlazemna.com/mbkyarn/'),
-        Book('اللغة الإنكليزية (كتاب الطالب والنشاط)',
-            url: 'https://mlazemna.com/bk1pr/'),
-        Book('الرياضيات (كتاب التلميذ والتمرينات)',
-            url: 'https://mlazemna.com/bk1pr/'),
-        Book('العلوم (كتاب التلميذ والنشاط)',
-            url: 'https://mlazemna.com/bk1pr/'),
-        Book('التربية الأخلاقية',
-            url: 'https://mlazemna.com/1bpr19/'),
-      ]),
-      makeGrade('الصف الثاني الابتدائي', primarySubjects),
-      makeGrade('الصف الثالث الابتدائي', middleSubjects),
-      makeGrade('الصف الرابع الابتدائي', middleSubjects),
-      makeGrade('الصف الخامس الابتدائي', middleSubjects),
-      makeGrade('الصف السادس الابتدائي', middleSubjects),
+      SchoolGrade(name: 'الصف الأول الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
+      SchoolGrade(name: 'الصف الثاني الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
+      SchoolGrade(name: 'الصف الثالث الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
+      SchoolGrade(name: 'الصف الرابع الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
+      SchoolGrade(name: 'الصف الخامس الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
+      SchoolGrade(name: 'الصف السادس الابتدائي',
+          subjects: makeSubjects(primarySubjects)),
     ],
   ),
-  Stage(
+  SchoolStage(
     name: 'المرحلة المتوسطة',
-    subtitle: 'من الصف الأول إلى الصف الثالث',
-    icon: Icons.menu_book_rounded,
-    color: const Color(0xFF168C83),
+    description: 'من الصف الأول إلى الصف الثالث المتوسط',
+    icon: Icons.school,
     grades: [
-      makeGrade('الصف الأول المتوسط', middleSubjects),
-      makeGrade('الصف الثاني المتوسط', [
-        'التربية الإسلامية',
-        'اللغة العربية',
-        'الرياضيات',
-        'الفيزياء',
-        'الكيمياء',
-        'الأحياء',
-        'الاجتماعيات',
-        'اللغة الإنكليزية',
-        'الحاسوب',
-      ]),
-      makeGrade('الصف الثالث المتوسط', [
-        'التربية الإسلامية',
-        'اللغة العربية',
-        'الرياضيات',
-        'الفيزياء',
-        'الكيمياء',
-        'الأحياء',
-        'الاجتماعيات',
-        'اللغة الإنكليزية',
-        'الحاسوب',
-      ]),
+      SchoolGrade(name: 'الأول المتوسط',
+          subjects: makeSubjects(middleSubjects)),
+      SchoolGrade(name: 'الثاني المتوسط',
+          subjects: makeSubjects(middleSubjects)),
+      SchoolGrade(name: 'الثالث المتوسط',
+          subjects: makeSubjects(middleSubjects)),
     ],
   ),
-  Stage(
-    name: 'الإعدادية — الفرع العلمي',
-    subtitle: 'الرابع والخامس والسادس العلمي',
-    icon: Icons.science_rounded,
-    color: const Color(0xFF5368C8),
+  SchoolStage(
+    name: 'المرحلة الإعدادية',
+    description: 'الصفوف الرابع والخامس والسادس الإعدادي',
+    icon: Icons.cast_for_education,
     grades: [
-      makeGrade('الصف الرابع الإعدادي — العلمي', scienceSubjects),
-      makeGrade('الصف الخامس الإعدادي — العلمي', scienceSubjects),
-      makeGrade('الصف السادس الإعدادي — العلمي', scienceSubjects),
-    ],
-  ),
-  Stage(
-    name: 'الإعدادية — الفرع الأدبي',
-    subtitle: 'الرابع والخامس والسادس الأدبي',
-    icon: Icons.auto_stories_rounded,
-    color: const Color(0xFF8654B7),
-    grades: [
-      makeGrade('الصف الرابع الإعدادي — الأدبي', literarySubjects),
-      makeGrade('الصف الخامس الإعدادي — الأدبي', [
-        'التربية الإسلامية',
-        'اللغة العربية',
-        'اللغة الإنكليزية',
-        'التاريخ الحديث والمعاصر',
-        'الجغرافية البشرية والاقتصادية',
-        'الرياضيات',
-        'الأدب والنصوص',
-        'الحاسوب',
-      ]),
-      makeGrade('الصف السادس الإعدادي — الأدبي', literarySubjects),
+      SchoolGrade(name: 'الرابع الإعدادي',
+          subjects: makeSubjects(preparatorySubjects)),
+      SchoolGrade(name: 'الخامس الإعدادي',
+          subjects: makeSubjects(preparatorySubjects)),
+      SchoolGrade(name: 'السادس الإعدادي',
+          subjects: makeSubjects(preparatorySubjects)),
     ],
   ),
 ];
-
-List<Book> get allBooks =>
-    stages.expand((s) => s.grades).expand((g) => g.books).toList();
-
-void showBookLink(BuildContext context, Book book,
-    {bool download = false}) {
-  if (book.url.isEmpty) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('رابط هذا الكتاب غير متوفر حالياً.'),
-      ),
-    );
-    return;
-  }
-
-  showDialog<void>(
-    context: context,
-    builder: (dialogContext) => AlertDialog(
-      title: Text(download ? 'رابط تحميل الكتاب' : 'عرض الكتاب'),
-      content: SingleChildScrollView(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(book.name),
-            const SizedBox(height: 12),
-            const Text('انسخ الرابط وافتحه في المتصفح:'),
-            const SizedBox(height: 12),
-            SelectableText(
-              book.url,
-              textDirection: TextDirection.ltr,
-              style: const TextStyle(color: Colors.blue),
-            ),
-          ],
-        ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(dialogContext),
-          child: const Text('إغلاق'),
-        ),
-      ],
-    ),
-  );
-}
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -257,300 +164,151 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int tab = 0;
-  String query = '';
-  final controller = TextEditingController();
+  final Set<String> favorites = {};
 
-  @override
-  void dispose() {
-    controller.dispose();
-    super.dispose();
+  void toggleFavorite(String key) {
+    setState(() {
+      if (favorites.contains(key)) {
+        favorites.remove(key);
+      } else {
+        favorites.add(key);
+      }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
-    final results = allBooks.where((b) {
-      return b.name.toLowerCase().contains(query.trim().toLowerCase());
-    }).toList();
-
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'مكتبة المناهج العراقية',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-      ),
-      body: tab == 0 ? homeBody(results) : favoritesBody(),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: tab,
-        onDestinationSelected: (i) => setState(() => tab = i),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: 'الرئيسية',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.favorite_border_rounded),
-            selectedIcon: Icon(Icons.favorite_rounded),
-            label: 'المفضلة',
+        title: const Text('مكتبة المناهج العراقية'),
+        actions: [
+          IconButton(
+            tooltip: 'المفضلة',
+            icon: const Icon(Icons.favorite),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => FavoritesScreen(
+                    favorites: favorites,
+                    onToggle: toggleFavorite,
+                  ),
+                ),
+              );
+            },
           ),
         ],
       ),
-    );
-  }
-
-  Widget homeBody(List<Book> results) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        Container(
-          padding: const EdgeInsets.all(22),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              colors: [Color(0xFF087F72), Color(0xFF07574F)],
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1565C0),
+              borderRadius: BorderRadius.circular(20),
             ),
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Icon(Icons.school_rounded,
-                  color: Colors.white, size: 38),
-              SizedBox(height: 14),
-              Text(
-                'كل كتبك الدراسية في مكان واحد',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 21,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 8),
-              Text(
-                'اختر مرحلتك وصفك للوصول إلى المواد الدراسية.',
-                style: TextStyle(color: Colors.white70, height: 1.6),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 18),
-        TextField(
-          controller: controller,
-          textDirection: TextDirection.rtl,
-          onChanged: (v) => setState(() => query = v),
-          decoration: InputDecoration(
-            hintText: 'ابحث عن كتاب أو مادة أو صف...',
-            prefixIcon: const Icon(Icons.search_rounded, color: green),
-            suffixIcon: query.isEmpty
-                ? null
-                : IconButton(
-                    onPressed: () {
-                      controller.clear();
-                      setState(() => query = '');
-                    },
-                    icon: const Icon(Icons.close),
-                  ),
-            filled: true,
-            fillColor: Colors.white,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(16),
-              borderSide: BorderSide.none,
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const Text(
-          'المراحل الدراسية',
-          style: TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.bold,
-            color: ink,
-          ),
-        ),
-        const SizedBox(height: 12),
-        if (query.isNotEmpty)
-          if (results.isEmpty)
-            const EmptyState(
-              title: 'لا توجد نتائج',
-              subtitle: 'جرّب كلمة بحث مختلفة.',
-              icon: Icons.search_off_rounded,
-            )
-          else
-            ...results.map(
-              (book) => Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: BookTile(
-                  book: book,
-                  onFavorite: () => setState(
-                    () => book.favorite = !book.favorite,
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'كتبك الدراسية في مكان واحد',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 23,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-              ),
-            )
-        else
-          ...stages.map(
-            (stage) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: StageCard(
-                stage: stage,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => GradesScreen(stage: stage),
-                  ),
+                SizedBox(height: 8),
+                Text(
+                  'اختر المرحلة ثم الصف والمادة لقراءة الكتاب أو تنزيله.',
+                  style: TextStyle(color: Colors.white),
                 ),
-              ),
+              ],
             ),
           ),
-        const SizedBox(height: 8),
-        const Text(
-          'تنبيه: قد تختلف الكتب حسب الطبعة والسنة الدراسية.',
-          style: TextStyle(color: Colors.black54, fontSize: 12),
-        ),
-      ],
-    );
-  }
-
-  Widget favoritesBody() {
-    final favorites = allBooks.where((b) => b.favorite).toList();
-
-    if (favorites.isEmpty) {
-      return const EmptyState(
-        icon: Icons.favorite_border_rounded,
-        title: 'قائمة المفضلة فارغة',
-        subtitle: 'اضغط على القلب بجانب أي كتاب لإضافته هنا.',
-      );
-    }
-
-    return ListView.separated(
-      padding: const EdgeInsets.all(16),
-      itemCount: favorites.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 10),
-      itemBuilder: (context, i) => BookTile(
-        book: favorites[i],
-        onFavorite: () => setState(
-          () => favorites[i].favorite = false,
-        ),
-      ),
-    );
-  }
-}
-
-class StageCard extends StatelessWidget {
-  const StageCard({
-    super.key,
-    required this.stage,
-    required this.onTap,
-  });
-
-  final Stage stage;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final count = stage.grades.fold<int>(
-      0,
-      (sum, grade) => sum + grade.books.length,
-    );
-
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-        side: const BorderSide(color: Color(0xFFE6EEEC)),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(20),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Container(
-                width: 56,
-                height: 56,
-                decoration: BoxDecoration(
-                  color: stage.color.withOpacity(0.13),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Icon(stage.icon, color: stage.color, size: 30),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      stage.name,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        color: ink,
-                      ),
-                    ),
-                    const SizedBox(height: 5),
-                    Text(
-                      stage.subtitle,
-                      style: const TextStyle(
-                        color: Colors.black54,
-                        fontSize: 12,
-                      ),
-                    ),
-                    const SizedBox(height: 7),
-                    Text(
-                      '${stage.grades.length} صفوف • $count مادة',
-                      style: TextStyle(
-                        color: stage.color,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(Icons.chevron_left_rounded),
-            ],
+          const SizedBox(height: 24),
+          const Text(
+            'المراحل الدراسية',
+            style: TextStyle(fontSize: 21, fontWeight: FontWeight.bold),
           ),
-        ),
+          const SizedBox(height: 12),
+          ...schoolStages.map((stage) {
+            return Card(
+              margin: const EdgeInsets.only(bottom: 12),
+              child: ListTile(
+                contentPadding: const EdgeInsets.all(14),
+                leading: CircleAvatar(
+                  radius: 27,
+                  backgroundColor: const Color(0xFFE3F2FD),
+                  child: Icon(stage.icon,
+                      color: const Color(0xFF1565C0), size: 30),
+                ),
+                title: Text(
+                  stage.name,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(stage.description),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => GradesScreen(
+                        stage: stage,
+                        favorites: favorites,
+                        onToggle: toggleFavorite,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
 }
 
 class GradesScreen extends StatelessWidget {
-  const GradesScreen({super.key, required this.stage});
+  final SchoolStage stage;
+  final Set<String> favorites;
+  final void Function(String) onToggle;
 
-  final Stage stage;
+  const GradesScreen({
+    super.key,
+    required this.stage,
+    required this.favorites,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: Text(stage.name)),
-      body: ListView.separated(
-        padding: const EdgeInsets.all(16),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(12),
         itemCount: stage.grades.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 10),
-        itemBuilder: (context, i) {
-          final grade = stage.grades[i];
-
+        itemBuilder: (context, index) {
+          final grade = stage.grades[index];
           return Card(
-            color: Colors.white,
             child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: stage.color.withOpacity(0.13),
-                foregroundColor: stage.color,
-                child: Text('${i + 1}'),
-              ),
+              leading: const Icon(Icons.class_, color: Color(0xFF1565C0)),
               title: Text(grade.name),
-              subtitle: Text('${grade.books.length} مواد دراسية'),
-              trailing: const Icon(Icons.chevron_left_rounded),
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => SubjectsScreen(grade: grade),
-                ),
-              ),
+              trailing: const Icon(Icons.chevron_left),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => SubjectsScreen(
+                      grade: grade,
+                      favorites: favorites,
+                      onToggle: onToggle,
+                    ),
+                  ),
+                );
+              },
             ),
           );
         },
@@ -560,21 +318,31 @@ class GradesScreen extends StatelessWidget {
 }
 
 class SubjectsScreen extends StatefulWidget {
-  const SubjectsScreen({super.key, required this.grade});
+  final SchoolGrade grade;
+  final Set<String> favorites;
+  final void Function(String) onToggle;
 
-  final Grade grade;
+  const SubjectsScreen({
+    super.key,
+    required this.grade,
+    required this.favorites,
+    required this.onToggle,
+  });
 
   @override
   State<SubjectsScreen> createState() => _SubjectsScreenState();
 }
 
 class _SubjectsScreenState extends State<SubjectsScreen> {
-  String filter = '';
+  String query = '';
+
+  String keyFor(BookSubject subject) =>
+      '${widget.grade.name}_${subject.name}';
 
   @override
   Widget build(BuildContext context) {
-    final books = widget.grade.books.where((b) {
-      return b.name.toLowerCase().contains(filter.toLowerCase());
+    final subjects = widget.grade.subjects.where((subject) {
+      return subject.name.toLowerCase().contains(query.toLowerCase());
     }).toList();
 
     return Scaffold(
@@ -582,40 +350,120 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: TextField(
-              textDirection: TextDirection.rtl,
-              onChanged: (v) => setState(() => filter = v),
               decoration: InputDecoration(
-                hintText: 'ابحث داخل مواد الصف...',
-                prefixIcon: const Icon(Icons.search_rounded),
+                hintText: 'ابحث عن مادة...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
                 filled: true,
                 fillColor: Colors.white,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  borderSide: BorderSide.none,
-                ),
               ),
+              onChanged: (value) => setState(() => query = value),
             ),
           ),
           Expanded(
-            child: books.isEmpty
-                ? const EmptyState(
-                    icon: Icons.search_off_rounded,
-                    title: 'لا توجد مواد مطابقة',
-                    subtitle: 'غيّر عبارة البحث وحاول مرة أخرى.',
-                  )
-                : ListView.separated(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 20),
-                    itemCount: books.length,
-                    separatorBuilder: (_, __) =>
-                        const SizedBox(height: 10),
-                    itemBuilder: (context, i) => BookTile(
-                      book: books[i],
-                      onFavorite: () => setState(
-                        () => books[i].favorite = !books[i].favorite,
-                      ),
-                    ),
+            child: subjects.isEmpty
+                ? const Center(child: Text('لا توجد نتائج للبحث'))
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    itemCount: subjects.length,
+                    itemBuilder: (context, index) {
+                      final subject = subjects[index];
+                      final key = keyFor(subject);
+                      final isFavorite = widget.favorites.contains(key);
+
+                      return Card(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        child: Padding(
+                          padding: const EdgeInsets.all(14),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.menu_book,
+                                      color: Color(0xFF1565C0), size: 30),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      subject.name,
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                  ),
+                                  IconButton(
+                                    tooltip: 'إضافة إلى المفضلة',
+                                    onPressed: () {
+                                      widget.onToggle(key);
+                                      setState(() {});
+                                    },
+                                    icon: Icon(
+                                      isFavorite
+                                          ? Icons.favorite
+                                          : Icons.favorite_border,
+                                      color: isFavorite
+                                          ? Colors.red
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: 12),
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: FilledButton.icon(
+                                      onPressed: () async {
+                                        if (subject.pdfUrl.trim().isEmpty) {
+                                          showMessage(
+                                            context,
+                                            'أضف رابط PDF الحقيقي لهذا الكتاب أولاً.',
+                                          );
+                                          return;
+                                        }
+                                        await downloadBook(
+                                          context,
+                                          subject,
+                                          widget.grade.name,
+                                        );
+                                      },
+                                      icon: const Icon(Icons.download),
+                                      label: const Text('تحميل الكتاب'),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: OutlinedButton.icon(
+                                      onPressed: () async {
+                                        if (subject.pdfUrl.trim().isEmpty) {
+                                          showMessage(
+                                            context,
+                                            'أضف رابط PDF الحقيقي لهذا الكتاب أولاً.',
+                                          );
+                                          return;
+                                        }
+                                        await readBook(
+                                          context,
+                                          subject,
+                                          widget.grade.name,
+                                        );
+                                      },
+                                      icon: const Icon(Icons.menu_book),
+                                      label: const Text('قراءة الكتاب'),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ),
+                      );
+                    },
                   ),
           ),
         ],
@@ -624,157 +472,314 @@ class _SubjectsScreenState extends State<SubjectsScreen> {
   }
 }
 
-class BookTile extends StatelessWidget {
-  const BookTile({
-    super.key,
-    required this.book,
-    required this.onFavorite,
-  });
+class FavoritesScreen extends StatelessWidget {
+  final Set<String> favorites;
+  final void Function(String) onToggle;
 
-  final Book book;
-  final VoidCallback onFavorite;
+  const FavoritesScreen({
+    super.key,
+    required this.favorites,
+    required this.onToggle,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final hasLink = book.url.isNotEmpty;
+    final entries = <MapEntry<String, BookSubject>>[];
 
-    return Card(
-      color: Colors.white,
-      elevation: 0,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(18),
-        side: const BorderSide(color: Color(0xFFE6EEEC)),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Container(
-                  width: 44,
-                  height: 44,
-                  decoration: BoxDecoration(
-                    color: green.withOpacity(0.09),
-                    borderRadius: BorderRadius.circular(13),
+    for (final stage in schoolStages) {
+      for (final grade in stage.grades) {
+        for (final subject in grade.subjects) {
+          final key = '${grade.name}_${subject.name}';
+          if (favorites.contains(key)) {
+            entries.add(MapEntry(key, subject));
+          }
+        }
+      }
+    }
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('المفضلة')),
+      body: entries.isEmpty
+          ? const Center(child: Text('لم تضف أي مادة إلى المفضلة بعد.'))
+          : ListView.builder(
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                return ListTile(
+                  leading: const Icon(Icons.menu_book),
+                  title: Text(entry.value.name),
+                  subtitle: Text(entry.key.split('_').first),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.favorite, color: Colors.red),
+                    onPressed: () => onToggle(entry.key),
                   ),
-                  child: const Icon(Icons.menu_book_rounded, color: green),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        book.name,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: ink,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        hasLink
-                            ? 'الرابط متوفر'
-                            : 'الرابط غير متوفر حالياً',
-                        style: TextStyle(
-                          color: hasLink ? green : Colors.orange.shade800,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  tooltip: book.favorite
-                      ? 'إزالة من المفضلة'
-                      : 'إضافة للمفضلة',
-                  onPressed: onFavorite,
-                  icon: Icon(
-                    book.favorite
-                        ? Icons.favorite_rounded
-                        : Icons.favorite_border_rounded,
-                    color: book.favorite ? Colors.redAccent : Colors.black38,
-                  ),
-                ),
-              ],
+                );
+              },
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => showBookLink(context, book),
-                    icon: const Icon(Icons.visibility_rounded, size: 18),
-                    label: const Text('عرض الكتاب'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: green,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: FilledButton.icon(
-                    onPressed: () =>
-                        showBookLink(context, book, download: true),
-                    icon: const Icon(Icons.download_rounded, size: 18),
-                    label: const Text('تحميل الكتاب'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: green,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-      ),
     );
   }
 }
 
-class EmptyState extends StatelessWidget {
-  const EmptyState({
+Future<Directory> bookDirectory() async {
+  final root = await getApplicationDocumentsDirectory();
+  final directory = Directory('${root.path}/books');
+
+  if (!await directory.exists()) {
+    await directory.create(recursive: true);
+  }
+
+  return directory;
+}
+
+String safeFileName(String value) {
+  return value.replaceAll(RegExp(r'[<>:"/\\|?*]'), '_');
+}
+
+Future<File> downloadPdfFile(
+  BookSubject subject,
+  String gradeName,
+) async {
+  final directory = await bookDirectory();
+  final fileName = '${safeFileName(gradeName)}_'
+      '${safeFileName(subject.name)}.pdf';
+  final file = File('${directory.path}/$fileName');
+
+  await Dio().download(
+    subject.pdfUrl,
+    file.path,
+    options: Options(
+      followRedirects: true,
+      receiveTimeout: const Duration(minutes: 3),
+      sendTimeout: const Duration(minutes: 1),
+      headers: {'Accept': 'application/pdf,*/*'},
+    ),
+    deleteOnError: true,
+  );
+
+  final handle = await file.open();
+  final header = await handle.read(5);
+  await handle.close();
+
+  if (header.length < 5 ||
+      String.fromCharCodes(header) != '%PDF-') {
+    await file.delete();
+    throw Exception(
+      'الرابط لم يرجع ملف PDF مباشراً. استخدم رابط تنزيل PDF صالحاً.',
+    );
+  }
+
+  return file;
+}
+
+Future<void> downloadBook(
+  BuildContext context,
+  BookSubject subject,
+  String gradeName,
+) async {
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const AlertDialog(
+      content: Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 18),
+          Expanded(child: Text('جارٍ تحميل الكتاب...')),
+        ],
+      ),
+    ),
+  );
+
+  try {
+    final file = await downloadPdfFile(subject, gradeName);
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('اكتمل التحميل'),
+        content: Text(
+          'تم حفظ الكتاب داخل التطبيق.\n\nالمسار:\n${file.path}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('حسناً'),
+          ),
+          FilledButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => PdfReaderScreen(
+                    file: file,
+                    title: subject.name,
+                  ),
+                ),
+              );
+            },
+            child: const Text('قراءة الكتاب'),
+          ),
+        ],
+      ),
+    );
+  } catch (error) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    showMessage(context, 'تعذر تحميل الكتاب: $error');
+  }
+}
+
+Future<void> readBook(
+  BuildContext context,
+  BookSubject subject,
+  String gradeName,
+) async {
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (_) => const AlertDialog(
+      content: Row(
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 18),
+          Expanded(child: Text('جارٍ تجهيز الكتاب للقراءة...')),
+        ],
+      ),
+    ),
+  );
+
+  try {
+    final file = await downloadPdfFile(subject, gradeName);
+
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => PdfReaderScreen(
+          file: file,
+          title: subject.name,
+        ),
+      ),
+    );
+  } catch (error) {
+    if (!context.mounted) return;
+    Navigator.of(context, rootNavigator: true).pop();
+    showMessage(context, 'تعذر فتح الكتاب: $error');
+  }
+}
+
+void showMessage(BuildContext context, String message) {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(content: Text(message)),
+  );
+}
+
+class PdfReaderScreen extends StatefulWidget {
+  final File file;
+  final String title;
+
+  const PdfReaderScreen({
     super.key,
-    required this.icon,
+    required this.file,
     required this.title,
-    required this.subtitle,
   });
 
-  final IconData icon;
-  final String title;
-  final String subtitle;
+  @override
+  State<PdfReaderScreen> createState() => _PdfReaderScreenState();
+}
+
+class _PdfReaderScreenState extends State<PdfReaderScreen> {
+  late final PdfControllerPinch controller;
+  int currentPage = 1;
+  int pageCount = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = PdfControllerPinch(
+      document: PdfDocument.openFile(widget.file.path),
+      initialPage: 1,
+    );
+  }
+
+  @override
+  void dispose() {
+    controller.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(30),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 56, color: green.withOpacity(0.55)),
-            const SizedBox(height: 14),
-            Text(
-              title,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: ink,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(widget.title),
+        actions: [
+          Center(
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: Text(
+                pageCount == 0
+                    ? '$currentPage'
+                    : '$currentPage / $pageCount',
               ),
             ),
-            const SizedBox(height: 8),
-            Text(
-              subtitle,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: Colors.black54,
-                height: 1.6,
+          ),
+        ],
+      ),
+      body: PdfViewPinch(
+        controller: controller,
+        onDocumentLoaded: (document) {
+          if (!mounted) return;
+          setState(() => pageCount = document.pagesCount);
+        },
+        onPageChanged: (page) {
+          if (!mounted) return;
+          setState(() => currentPage = page);
+        },
+        onDocumentError: (error) {
+          if (!mounted) return;
+          showMessage(context, 'تعذر عرض ملف PDF: $error');
+        },
+      ),
+      bottomNavigationBar: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: 'الصفحة السابقة',
+                onPressed: () {
+                  if (currentPage > 1) {
+                    controller.previousPage(
+                      curve: Curves.ease,
+                      duration: const Duration(milliseconds: 250),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.chevron_right),
               ),
-            ),
-          ],
+              Text('صفحة $currentPage'),
+              IconButton(
+                tooltip: 'الصفحة التالية',
+                onPressed: () {
+                  if (pageCount == 0 || currentPage < pageCount) {
+                    controller.nextPage(
+                      curve: Curves.ease,
+                      duration: const Duration(milliseconds: 250),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.chevron_left),
+              ),
+            ],
+          ),
         ),
       ),
     );
