@@ -1,6 +1,6 @@
 
-import 'dart:html' as html;
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 void main() => runApp(const IraqiLibraryApp());
 
@@ -186,6 +186,19 @@ Color subjectColor(String subject) {
   }
 }
 
+// فتح الروابط بطريقة متوافقة مع Android و iOS و Flutter Web.
+Future<void> openExternalUrl(String url) async {
+  final uri = Uri.tryParse(url.trim());
+  if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
+    return;
+  }
+  try {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  } catch (e) {
+    debugPrint('تعذر فتح الرابط: $e');
+  }
+}
+
 class SchoolBook {
   final String title;
   final String subject;
@@ -249,7 +262,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           foregroundColor: navy,
           elevation: 0,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -273,7 +286,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           seedColor: blue,
           brightness: Brightness.dark,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -1035,22 +1048,21 @@ class _LibraryHomeState extends State<LibraryHome> {
     );
   }
 
-  void downloadBook(SchoolBook book) {
+  Future<void> downloadBook(SchoolBook book) async {
     if (book.url.isEmpty) {
       showMessage('رابط تحميل هذا الكتاب غير متوفر حالياً.');
       return;
     }
 
     final match = RegExp(r'/d/([^/]+)').firstMatch(book.url);
-
+    final String downloadUrl;
     if (match != null) {
       final fileId = match.group(1)!;
-      final downloadUrl =
-          'https://drive.google.com/uc?export=download&id=$fileId';
-      html.window.open(downloadUrl, '_blank');
+      downloadUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
     } else {
-      html.window.open(book.url, '_blank');
+      downloadUrl = book.url;
     }
+    await openExternalUrl(downloadUrl);
   }
 
   void openBook(SchoolBook book) {
@@ -1139,7 +1151,7 @@ class _LibraryHomeState extends State<LibraryHome> {
                                   return;
                                 }
                                 Navigator.pop(sheetContext);
-                                html.window.open(book.url, '_blank');
+                                openExternalUrl(book.url);
                               },
                               child: const Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -1436,3 +1448,4 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
+
