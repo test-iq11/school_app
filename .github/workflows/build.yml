@@ -13,7 +13,6 @@ permissions:
 
 jobs:
   build:
-    name: Build Flutter APK
     runs-on: ubuntu-latest
 
     steps:
@@ -32,33 +31,69 @@ jobs:
           channel: stable
           cache: true
 
-      - name: Check project structure
-        run: |
-          if [ ! -f pubspec.yaml ]; then
-            echo "ERROR: pubspec.yaml not found in repository root."
-            exit 1
-          fi
+      - name: Show Flutter version
+        run: flutter --version
 
-          echo "Project files:"
-          ls -la
-
-      - name: Generate missing Android platform files
+      - name: Create Android project if missing
+        shell: bash
         run: |
-          if [ ! -f android/app/build.gradle ] && \
-             [ ! -f android/app/build.gradle.kts ]; then
+          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
             flutter create --platforms=android --org com.school.app .
           fi
 
-      - name: Verify Android configuration
+      - name: Enable Android core library desugaring
+        shell: python
         run: |
-          if [ ! -f android/app/build.gradle ] && \
-             [ ! -f android/app/build.gradle.kts ]; then
-            echo "ERROR: Android Gradle configuration was not generated."
-            find android -maxdepth 4 -type f 2>/dev/null || true
-            exit 1
-          fi
+          from pathlib import Path
+          import re
 
-      - name: Install dependencies
+          groovy = Path("android/app/build.gradle")
+          kotlin = Path("android/app/build.gradle.kts")
+
+          if kotlin.exists():
+              path = kotlin
+              is_kotlin = True
+          elif groovy.exists():
+              path = groovy
+              is_kotlin = False
+          else:
+              raise SystemExit("Android Gradle file was not created.")
+
+          text = path.read_text(encoding="utf-8")
+
+          if is_kotlin:
+              setting = "isCoreLibraryDesugaringEnabled = true"
+              dependency = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
+          else:
+              setting = "coreLibraryDesugaringEnabled true"
+              dependency = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+
+          if "isCoreLibraryDesugaringEnabled" not in text and "coreLibraryDesugaringEnabled" not in text:
+              pattern = r"compileOptions\s*\{"
+              text, count = re.subn(
+                  pattern,
+                  lambda m: m.group(0) + "\n        " + setting,
+                  text,
+                  count=1
+              )
+              if count == 0:
+                  raise SystemExit("Could not find compileOptions block in " + str(path))
+
+          if "desugar_jdk_libs" not in text:
+              pattern = r"dependencies\s*\{"
+              text, count = re.subn(
+                  pattern,
+                  lambda m: m.group(0) + "\n    " + dependency,
+                  text,
+                  count=1
+              )
+              if count == 0:
+                  text += "\n\ndependencies {\n    " + dependency + "\n}\n"
+
+          path.write_text(text, encoding="utf-8")
+          print("Desugaring configured in", path)
+
+      - name: Install Flutter dependencies
         run: flutter pub get
 
       - name: Build release APK
@@ -67,7 +102,6 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: school-app-release-apk
+          name: iraqi-curriculum-library-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
-          retention-days: 14
