@@ -47,31 +47,29 @@ List<String> gradeSubjectsFor(String grade) {
       result.add('الاجتماعيات');
     }
 
-    result.addAll([
-      'التربية الفنية',
-      'التربية الرياضية',
-      'الحاسوب',
-    ]);
-
     return result;
   }
 
   if (grade.contains('المتوسط')) {
-    return [
+    final result = <String>[
       'الإسلامية',
       'اللغة العربية',
       'اللغة الإنكليزية',
       'الرياضيات',
       'العلوم',
       'الاجتماعيات',
-      'الحاسوب',
-      'التربية الفنية',
-      'التربية الرياضية',
     ];
+
+    if (grade == 'الأول المتوسط' ||
+        grade == 'الثاني المتوسط') {
+      result.add('الحاسوب');
+    }
+
+    return result;
   }
 
   if (grade.contains('العلمي')) {
-    return [
+    final result = <String>[
       'الإسلامية',
       'اللغة العربية',
       'اللغة الإنكليزية',
@@ -79,10 +77,17 @@ List<String> gradeSubjectsFor(String grade) {
       'الفيزياء',
       'الكيمياء',
       'الأحياء',
-      'الحاسوب',
     ];
+
+    if (grade == 'الرابع العلمي' ||
+        grade == 'الخامس العلمي') {
+      result.add('الحاسوب');
+    }
+
+    return result;
   }
 
+  // المواد الأدبية من دون الحاسوب.
   return [
     'الإسلامية',
     'اللغة العربية',
@@ -91,7 +96,6 @@ List<String> gradeSubjectsFor(String grade) {
     'التاريخ',
     'الجغرافية',
     'الاقتصاد',
-    'الحاسوب',
   ];
 }
 
@@ -142,10 +146,6 @@ IconData subjectIcon(String subject) {
       return Icons.computer_rounded;
     case 'الاقتصاد':
       return Icons.account_balance_rounded;
-    case 'التربية الفنية':
-      return Icons.palette_rounded;
-    case 'التربية الرياضية':
-      return Icons.sports_soccer_rounded;
     default:
       return Icons.auto_stories_rounded;
   }
@@ -177,23 +177,24 @@ Color subjectColor(String subject) {
       return const Color(0xFF398A91);
     case 'الحاسوب':
       return const Color(0xFF5D6DAB);
-    case 'التربية الفنية':
-      return const Color(0xFFDB719A);
-    case 'التربية الرياضية':
-      return const Color(0xFF549D62);
     default:
       return blue;
   }
 }
 
-// فتح الروابط بطريقة متوافقة مع Android و iOS و Flutter Web.
 Future<void> openExternalUrl(String url) async {
   final uri = Uri.tryParse(url.trim());
-  if (uri == null || (uri.scheme != 'https' && uri.scheme != 'http')) {
+
+  if (uri == null ||
+      (uri.scheme != 'https' && uri.scheme != 'http')) {
     return;
   }
+
   try {
-    await launchUrl(uri, mode: LaunchMode.externalApplication);
+    await launchUrl(
+      uri,
+      mode: LaunchMode.externalApplication,
+    );
   } catch (e) {
     debugPrint('تعذر فتح الرابط: $e');
   }
@@ -241,7 +242,8 @@ class IraqiLibraryApp extends StatefulWidget {
   const IraqiLibraryApp({super.key});
 
   @override
-  State<IraqiLibraryApp> createState() => _IraqiLibraryAppState();
+  State<IraqiLibraryApp> createState() =>
+      _IraqiLibraryAppState();
 }
 
 class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
@@ -262,12 +264,14 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           foregroundColor: navy,
           elevation: 0,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFE8EDF5)),
+            side: const BorderSide(
+              color: Color(0xFFE8EDF5),
+            ),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
@@ -286,7 +290,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           seedColor: blue,
           brightness: Brightness.dark,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -333,6 +337,7 @@ class _LibraryHomeState extends State<LibraryHome> {
 
     return source.where((book) {
       final query = search.trim().toLowerCase();
+
       return query.isEmpty ||
           book.title.toLowerCase().contains(query) ||
           book.subject.toLowerCase().contains(query) ||
@@ -398,7 +403,8 @@ class _LibraryHomeState extends State<LibraryHome> {
           actions: [
             IconButton(
               tooltip: 'الوضع الليلي',
-              onPressed: () => widget.onDarkChanged(!widget.dark),
+              onPressed: () =>
+                  widget.onDarkChanged(!widget.dark),
               icon: Icon(
                 widget.dark
                     ? Icons.light_mode_rounded
@@ -415,7 +421,9 @@ class _LibraryHomeState extends State<LibraryHome> {
 
               return Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1100),
+                  constraints: const BoxConstraints(
+                    maxWidth: 1100,
+                  ),
                   child: IndexedStack(
                     index: page,
                     children: [
@@ -434,7 +442,8 @@ class _LibraryHomeState extends State<LibraryHome> {
         bottomNavigationBar: NavigationBar(
           selectedIndex: page,
           onDestinationSelected: changePage,
-          labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+          labelBehavior:
+              NavigationDestinationLabelBehavior.alwaysShow,
           destinations: const [
             NavigationDestination(
               icon: Icon(Icons.home_outlined),
@@ -538,7 +547,8 @@ class _LibraryHomeState extends State<LibraryHome> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: visibleBooks.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: wide ? 3 : 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -546,6 +556,7 @@ class _LibraryHomeState extends State<LibraryHome> {
             ),
             itemBuilder: (context, index) {
               final book = visibleBooks[index];
+
               return BookCard(
                 book: book,
                 favorite: favorites.contains(book.key),
@@ -559,7 +570,10 @@ class _LibraryHomeState extends State<LibraryHome> {
         const Center(
           child: Text(
             'مكتبة المناهج العراقية',
-            style: TextStyle(fontSize: 11, color: Colors.grey),
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey,
+            ),
           ),
         ),
       ],
@@ -573,7 +587,9 @@ class _LibraryHomeState extends State<LibraryHome> {
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
         borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: color.withOpacity(0.35)),
+        border: Border.all(
+          color: color.withOpacity(0.35),
+        ),
         boxShadow: [
           BoxShadow(
             color: color.withOpacity(0.08),
@@ -631,7 +647,11 @@ class _LibraryHomeState extends State<LibraryHome> {
                     ],
                   ),
                 ),
-                Icon(Icons.expand_more_rounded, color: color, size: 29),
+                Icon(
+                  Icons.expand_more_rounded,
+                  color: color,
+                  size: 29,
+                ),
               ],
             ),
           ),
@@ -646,18 +666,43 @@ class _LibraryHomeState extends State<LibraryHome> {
                 isExpanded: true,
                 borderRadius: BorderRadius.circular(18),
                 dropdownColor: Theme.of(context).cardColor,
-                icon: Icon(Icons.keyboard_arrow_down_rounded, color: color),
+                icon: Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  color: color,
+                ),
                 hint: const Text('اختر الصف الدراسي'),
                 items: [
-                  ..._stageHeader('المرحلة الابتدائية', teal),
-                  ..._stageGrades(grades.take(6), teal),
-                  ..._stageHeader('المرحلة المتوسطة', blue),
-                  ..._stageGrades(grades.skip(6).take(3), blue),
-                  ..._stageHeader('المرحلة الإعدادية', purple),
-                  ..._stageGrades(grades.skip(9), purple),
+                  ..._stageHeader(
+                    'المرحلة الابتدائية',
+                    teal,
+                  ),
+                  ..._stageGrades(
+                    grades.take(6),
+                    teal,
+                  ),
+                  ..._stageHeader(
+                    'المرحلة المتوسطة',
+                    blue,
+                  ),
+                  ..._stageGrades(
+                    grades.skip(6).take(3),
+                    blue,
+                  ),
+                  ..._stageHeader(
+                    'المرحلة الإعدادية',
+                    purple,
+                  ),
+                  ..._stageGrades(
+                    grades.skip(9),
+                    purple,
+                  ),
                 ],
                 onChanged: (value) {
-                  if (value == null || !grades.contains(value)) return;
+                  if (value == null ||
+                      !grades.contains(value)) {
+                    return;
+                  }
+
                   setState(() {
                     selectedGrade = value;
                     search = '';
@@ -681,7 +726,10 @@ class _LibraryHomeState extends State<LibraryHome> {
         enabled: false,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.symmetric(vertical: 9, horizontal: 7),
+          padding: const EdgeInsets.symmetric(
+            vertical: 9,
+            horizontal: 7,
+          ),
           decoration: BoxDecoration(
             color: color.withOpacity(0.12),
             borderRadius: BorderRadius.circular(9),
@@ -722,9 +770,14 @@ class _LibraryHomeState extends State<LibraryHome> {
       return DropdownMenuItem<String>(
         value: grade,
         child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 5),
+          padding: const EdgeInsets.symmetric(
+            vertical: 5,
+            horizontal: 5,
+          ),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.10) : Colors.transparent,
+            color: selected
+                ? color.withOpacity(0.10)
+                : Colors.transparent,
             borderRadius: BorderRadius.circular(10),
           ),
           child: Row(
@@ -736,21 +789,31 @@ class _LibraryHomeState extends State<LibraryHome> {
                   color: color.withOpacity(0.12),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(gradeIcon(grade), color: color, size: 19),
+                child: Icon(
+                  gradeIcon(grade),
+                  color: color,
+                  size: 19,
+                ),
               ),
               const SizedBox(width: 11),
               Expanded(
                 child: Text(
                   grade,
                   style: TextStyle(
-                    fontWeight: selected ? FontWeight.w900 : FontWeight.w500,
+                    fontWeight: selected
+                        ? FontWeight.w900
+                        : FontWeight.w500,
                     color: selected ? color : null,
                     fontSize: 13,
                   ),
                 ),
               ),
               if (selected)
-                Icon(Icons.check_circle_rounded, color: color, size: 20),
+                Icon(
+                  Icons.check_circle_rounded,
+                  color: color,
+                  size: 20,
+                ),
             ],
           ),
         ),
@@ -758,15 +821,18 @@ class _LibraryHomeState extends State<LibraryHome> {
     }).toList();
   }
 
-  // بطاقة رئيسية أقل ارتفاعاً
+  // بطاقة زرقاء أقصر مع المحافظة على الألوان والتصميم.
   Widget heroBanner() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFF173B68), Color(0xFF2864E8)],
+          colors: [
+            Color(0xFF173B68),
+            Color(0xFF2864E8),
+          ],
         ),
         borderRadius: BorderRadius.circular(26),
       ),
@@ -786,8 +852,8 @@ class _LibraryHomeState extends State<LibraryHome> {
             children: [
               Container(
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
+                  horizontal: 9,
+                  vertical: 3,
                 ),
                 decoration: BoxDecoration(
                   color: Colors.white.withOpacity(0.15),
@@ -795,34 +861,41 @@ class _LibraryHomeState extends State<LibraryHome> {
                 ),
                 child: const Text(
                   'مساحة تعلّمك',
-                  style: TextStyle(color: Colors.white, fontSize: 11),
-                ),
-              ),
-              const SizedBox(height: 8),
-              const Text(
-                'كل كتبك الدراسية،\nفي مكان واحد.',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 22,
-                  height: 1.25,
-                  fontWeight: FontWeight.w900,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                  ),
                 ),
               ),
               const SizedBox(height: 6),
               const Text(
-                'نظّم دراستك وخلّ وصولك للمعلومة أسهل.',
-                style: TextStyle(color: Color(0xFFDCE7FF), fontSize: 12),
+                'كل كتبك الدراسية،\nفي مكان واحد.',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 19,
+                  height: 1.15,
+                  fontWeight: FontWeight.w900,
+                ),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 4),
+              const Text(
+                'نظّم دراستك وخلّ وصولك للمعلومة أسهل.',
+                style: TextStyle(
+                  color: Color(0xFFDCE7FF),
+                  fontSize: 11,
+                ),
+              ),
+              const SizedBox(height: 7),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: navy,
                   padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
+                    horizontal: 12,
+                    vertical: 5,
                   ),
-                  minimumSize: const Size(0, 36),
+                  minimumSize: const Size(0, 30),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 ),
                 onPressed: () {
                   setState(() {
@@ -831,10 +904,16 @@ class _LibraryHomeState extends State<LibraryHome> {
                     searchController.clear();
                   });
                 },
-                icon: const Icon(Icons.menu_book_rounded, size: 18),
+                icon: const Icon(
+                  Icons.menu_book_rounded,
+                  size: 16,
+                ),
                 label: const Text(
                   'تصفّح الكتب',
-                  style: TextStyle(fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                  ),
                 ),
               ),
             ],
@@ -868,7 +947,8 @@ class _LibraryHomeState extends State<LibraryHome> {
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             itemCount: items.length,
-            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+            gridDelegate:
+                SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: wide ? 3 : 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
@@ -876,6 +956,7 @@ class _LibraryHomeState extends State<LibraryHome> {
             ),
             itemBuilder: (context, index) {
               final book = items[index];
+
               return BookCard(
                 book: book,
                 favorite: true,
@@ -894,7 +975,11 @@ class _LibraryHomeState extends State<LibraryHome> {
       ('الرياضيات', Icons.calculate_rounded, blue),
       ('اللغة العربية', Icons.menu_book_rounded, purple),
       ('العلوم', Icons.science_rounded, teal),
-      ('اللغة الإنكليزية', Icons.translate_rounded, Color(0xFFEC9142)),
+      (
+        'اللغة الإنكليزية',
+        Icons.translate_rounded,
+        Color(0xFFEC9142),
+      ),
     ];
 
     return ListView(
@@ -915,10 +1000,15 @@ class _LibraryHomeState extends State<LibraryHome> {
               ),
               title: Text(
                 item.$1,
-                style: const TextStyle(fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               subtitle: const Text('اختبار تجريبي'),
-              trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+              trailing: const Icon(
+                Icons.arrow_back_ios_new_rounded,
+                size: 16,
+              ),
               onTap: () {
                 showDialog<void>(
                   context: context,
@@ -930,7 +1020,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                     ),
                     actions: [
                       TextButton(
-                        onPressed: () => Navigator.pop(dialogContext),
+                        onPressed: () =>
+                            Navigator.pop(dialogContext),
                         child: const Text('حسناً'),
                       ),
                     ],
@@ -967,10 +1058,12 @@ class _LibraryHomeState extends State<LibraryHome> {
           onPressed: () {
             final text = noteController.text.trim();
             if (text.isEmpty) return;
+
             setState(() {
               notes.insert(0, text);
               noteController.clear();
             });
+
             FocusScope.of(context).unfocus();
           },
           icon: const Icon(Icons.add_rounded),
@@ -988,12 +1081,19 @@ class _LibraryHomeState extends State<LibraryHome> {
             return Card(
               margin: const EdgeInsets.only(bottom: 10),
               child: ListTile(
-                leading: const Icon(Icons.notes_rounded, color: blue),
+                leading: const Icon(
+                  Icons.notes_rounded,
+                  color: blue,
+                ),
                 title: Text(entry.value),
                 trailing: IconButton(
-                  icon: const Icon(Icons.delete_outline_rounded),
+                  icon: const Icon(
+                    Icons.delete_outline_rounded,
+                  ),
                   onPressed: () {
-                    setState(() => notes.removeAt(entry.key));
+                    setState(() {
+                      notes.removeAt(entry.key);
+                    });
                   },
                 ),
               ),
@@ -1050,18 +1150,24 @@ class _LibraryHomeState extends State<LibraryHome> {
 
   Future<void> downloadBook(SchoolBook book) async {
     if (book.url.isEmpty) {
-      showMessage('رابط تحميل هذا الكتاب غير متوفر حالياً.');
+      showMessage(
+        'رابط تحميل هذا الكتاب غير متوفر حالياً.',
+      );
       return;
     }
 
     final match = RegExp(r'/d/([^/]+)').firstMatch(book.url);
+
     final String downloadUrl;
+
     if (match != null) {
       final fileId = match.group(1)!;
-      downloadUrl = 'https://drive.google.com/uc?export=download&id=$fileId';
+      downloadUrl =
+          'https://drive.google.com/uc?export=download&id=$fileId';
     } else {
       downloadUrl = book.url;
     }
+
     await openExternalUrl(downloadUrl);
   }
 
@@ -1079,7 +1185,12 @@ class _LibraryHomeState extends State<LibraryHome> {
               textDirection: TextDirection.rtl,
               child: SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 8, 20, 26),
+                  padding: const EdgeInsets.fromLTRB(
+                    20,
+                    8,
+                    20,
+                    26,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -1092,7 +1203,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                             decoration: BoxDecoration(
                               color: subjectColor(book.subject)
                                   .withOpacity(0.12),
-                              borderRadius: BorderRadius.circular(16),
+                              borderRadius:
+                                  BorderRadius.circular(16),
                             ),
                             child: Icon(
                               subjectIcon(book.subject),
@@ -1103,7 +1215,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                           const SizedBox(width: 13),
                           Expanded(
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
+                              crossAxisAlignment:
+                                  CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   book.title,
@@ -1118,7 +1231,9 @@ class _LibraryHomeState extends State<LibraryHome> {
                                 Text(
                                   book.subject,
                                   style: TextStyle(
-                                    color: subjectColor(book.subject),
+                                    color: subjectColor(
+                                      book.subject,
+                                    ),
                                   ),
                                 ),
                               ],
@@ -1138,7 +1253,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                           Expanded(
                             child: FilledButton(
                               style: FilledButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                    const EdgeInsets.symmetric(
                                   vertical: 12,
                                   horizontal: 5,
                                 ),
@@ -1150,13 +1266,17 @@ class _LibraryHomeState extends State<LibraryHome> {
                                   );
                                   return;
                                 }
+
                                 Navigator.pop(sheetContext);
                                 openExternalUrl(book.url);
                               },
                               child: const Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.menu_book_rounded, size: 19),
+                                  Icon(
+                                    Icons.menu_book_rounded,
+                                    size: 19,
+                                  ),
                                   SizedBox(height: 4),
                                   Text('فتح الكتاب'),
                                 ],
@@ -1167,7 +1287,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                           Expanded(
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                    const EdgeInsets.symmetric(
                                   vertical: 12,
                                   horizontal: 5,
                                 ),
@@ -1176,7 +1297,10 @@ class _LibraryHomeState extends State<LibraryHome> {
                               child: const Column(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.download_rounded, size: 19),
+                                  Icon(
+                                    Icons.download_rounded,
+                                    size: 19,
+                                  ),
                                   SizedBox(height: 4),
                                   Text('تحميل'),
                                 ],
@@ -1187,7 +1311,8 @@ class _LibraryHomeState extends State<LibraryHome> {
                           Expanded(
                             child: OutlinedButton(
                               style: OutlinedButton.styleFrom(
-                                padding: const EdgeInsets.symmetric(
+                                padding:
+                                    const EdgeInsets.symmetric(
                                   vertical: 12,
                                   horizontal: 3,
                                 ),
@@ -1211,7 +1336,9 @@ class _LibraryHomeState extends State<LibraryHome> {
                                   const SizedBox(height: 4),
                                   Text(
                                     isFavorite ? 'إزالة' : 'المفضلة',
-                                    style: const TextStyle(fontSize: 12),
+                                    style: const TextStyle(
+                                      fontSize: 12,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -1290,7 +1417,9 @@ class BookCard extends StatelessWidget {
                         favorite
                             ? Icons.favorite_rounded
                             : Icons.favorite_border_rounded,
-                        color: favorite ? Colors.redAccent : Colors.grey,
+                        color: favorite
+                            ? Colors.redAccent
+                            : Colors.grey,
                         size: 20,
                       ),
                     ),
@@ -1314,7 +1443,9 @@ class BookCard extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: Theme.of(context)
+                      .colorScheme
+                      .onSurfaceVariant,
                 ),
               ),
               const Spacer(),
@@ -1324,12 +1455,18 @@ class BookCard extends StatelessWidget {
                     child: TextButton.icon(
                       onPressed: onTap,
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                        ),
                         minimumSize: const Size(0, 29),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 14),
+                      icon: const Icon(
+                        Icons.open_in_new_rounded,
+                        size: 14,
+                      ),
                       label: const Text(
                         'فتح',
                         style: TextStyle(fontSize: 11),
@@ -1340,12 +1477,18 @@ class BookCard extends StatelessWidget {
                     child: TextButton.icon(
                       onPressed: onDownload,
                       style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 2,
+                        ),
                         minimumSize: const Size(0, 29),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        tapTargetSize:
+                            MaterialTapTargetSize.shrinkWrap,
                         visualDensity: VisualDensity.compact,
                       ),
-                      icon: const Icon(Icons.download_rounded, size: 15),
+                      icon: const Icon(
+                        Icons.download_rounded,
+                        size: 15,
+                      ),
                       label: const Text(
                         'تحميل',
                         style: TextStyle(fontSize: 11),
@@ -1390,7 +1533,9 @@ class SectionHeading extends StatelessWidget {
           subtitle,
           style: TextStyle(
             fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+            color: Theme.of(context)
+                .colorScheme
+                .onSurfaceVariant,
           ),
         ),
       ],
@@ -1413,7 +1558,10 @@ class EmptyState extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 42, horizontal: 20),
+      padding: const EdgeInsets.symmetric(
+        vertical: 42,
+        horizontal: 20,
+      ),
       child: Column(
         children: [
           Container(
@@ -1423,7 +1571,11 @@ class EmptyState extends StatelessWidget {
               color: blue.withOpacity(0.09),
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 37, color: blue),
+            child: Icon(
+              icon,
+              size: 37,
+              color: blue,
+            ),
           ),
           const SizedBox(height: 17),
           Text(
@@ -1438,7 +1590,9 @@ class EmptyState extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: Theme.of(context)
+                  .colorScheme
+                  .onSurfaceVariant,
               height: 1.6,
             ),
             textAlign: TextAlign.center,
@@ -1448,4 +1602,3 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
-
