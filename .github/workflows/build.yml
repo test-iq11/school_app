@@ -1,115 +1,59 @@
 
-name: Build Android APK
-
-on:
-  workflow_dispatch:
-  push:
-    branches:
-      - main
-      - master
-
-permissions:
-  contents: read
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Java
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
-
-      - name: Set up Flutter
-        uses: subosito/flutter-action@v2
-        with:
-          channel: stable
-          cache: true
+      # The source archive is the single source of truth for the app files.
+      - name: Restore complete project from source archive
+        shell: bash
+        run: |
+          if [ ! -f iraqi_curriculum_library_source.zip ]; then
+            echo "ERROR: Upload iraqi_curriculum_library_source.zip to the repository root."
+            exit 1
+          fi
+          unzip -oq iraqi_curriculum_library_source.zip -d .
+          test -f pubspec.yaml
+          test -f lib/main.dart
+          echo "Project source restored."
 
       - name: Show Flutter version
         run: flutter --version
 
-      - name: Create Android project if missing
+      - name: Recreate Android project from clean template
         shell: bash
         run: |
-          if [ ! -f android/app/build.gradle ] && [ ! -f android/app/build.gradle.kts ]; then
-            flutter create --platforms=android --org com.school.app .
-          fi
+          rm -rf android
+          flutter create --platforms=android --project-name=iraqi_curriculum_library --org=com.school.app .
 
-      - name: Enable Android core library desugaring
-        shell: python
-        run: |
-          from pathlib import Path
-          import re
+      - name: Configure Android Gradle
+        run: python3 tool/configure_android_gradle.py
 
-          groovy = Path("android/app/build.gradle")
-          kotlin = Path("android/app/build.gradle.kts")
+      - name: Configure Android internet and notification permissions
+        run: python3 tool/configure_android_manifest.py
 
-          if kotlin.exists():
-              path = kotlin
-              is_kotlin = True
-          elif groovy.exists():
-              path = groovy
-              is_kotlin = False
-          else:
-              raise SystemExit("Android Gradle file was not created.")
-
-          text = path.read_text(encoding="utf-8")
-
-          if is_kotlin:
-              setting = "isCoreLibraryDesugaringEnabled = true"
-              dependency = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-          else:
-              setting = "coreLibraryDesugaringEnabled true"
-              dependency = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
-
-          if "isCoreLibraryDesugaringEnabled" not in text and "coreLibraryDesugaringEnabled" not in text:
-              text, count = re.subn(
-                  r"compileOptions\s*\{",
-                  lambda m: m.group(0) + "\n        " + setting,
-                  text,
-                  count=1
-              )
-              if count == 0:
-                  raise SystemExit("Could not find compileOptions block.")
-
-          if "desugar_jdk_libs" not in text:
-              text, count = re.subn(
-                  r"dependencies\s*\{",
-                  lambda m: m.group(0) + "\n    " + dependency,
-                  text,
-                  count=1
-              )
-              if count == 0:
-                  text += "\n\ndependencies {\n    " + dependency + "\n}\n"
-
-          path.write_text(text, encoding="utf-8")
-          print("Desugaring configured in", path)
-
-      - name: Clean project
+      - name: Clean old build files
         run: flutter clean
 
-      - name: Resolve dependencies
+      - name: Get dependencies
         run: flutter pub get
 
-      - name: Show shared_preferences version
-        shell: bash
-        run: |
-          flutter pub deps --style=compact > dependencies.txt
-          grep -i "shared_preferences" dependencies.txt || true
-          cat pubspec.lock | grep -A 8 "^  shared_preferences:" || true
+      - name: Analyze Dart code
+        run: flutter analyze --no-pub
+        continue-on-error: true
 
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Verify APK exists
+        shell: bash
+        run: |
+          APK="build/app/outputs/flutter-apk/app-release.apk"
+          if [ ! -s "$APK" ]; then
+            echo "ERROR: APK was not created."
+            exit 1
+          fi
+          ls -lh "$APK"
+
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: iraqi-curriculum-library-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
+          retention-days: 14
