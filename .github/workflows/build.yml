@@ -1,54 +1,74 @@
+
 name: Build APK
 
 on:
   push:
     branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Java Manually
+      - name: Install Java
         run: |
           sudo apt-get update
           sudo apt-get install -y openjdk-17-jdk
           java -version
 
-      - name: Setup Flutter Environment
+      - name: Setup Flutter
         run: |
-          git config --global advice.detachedHead false
-          git clone https://github.com/flutter/flutter.git --branch 3.19.0 --depth 1 $HOME/flutter
-          export PATH="$HOME/flutter/bin:$PATH"
-          flutter --version
+          git clone https://github.com/flutter/flutter.git \
+            --branch 3.19.0 --depth 1 "$HOME/flutter"
+          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
+          "$HOME/flutter/bin/flutter" --version
 
-      - name: Create Android Platform Files Safely
+      - name: Create Android Platform Files
         run: |
-          export PATH="$HOME/flutter/bin:$PATH"
-          # حفظ نسخة احتياطية من كود main.dart الخاص بك قبل إنشاء منصة أندرويد
-          cp lib/main.dart lib/main_backup.dart
-          flutter create . --org com.school.books --project-name school_app --platforms=android
-          # استعادة كودك الأصلي الشامل
-          cp lib/main_backup.dart lib/main.dart
-          rm lib/main_backup.dart
+          flutter create . \
+            --org com.school.books \
+            --project-name school_app \
+            --platforms=android
 
-      - name: Update Android SDK Targets
+      - name: Add Internet Permission
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+
+          p = Path("android/app/src/main/AndroidManifest.xml")
+          text = p.read_text()
+
+          permission = (
+              '<uses-permission '
+              'android:name="android.permission.INTERNET" />'
+          )
+
+          if "android.permission.INTERNET" not in text:
+              text = text.replace(
+                  "<application",
+                  permission + "\n    <application",
+                  1
+              )
+
+          p.write_text(text)
+          print("AndroidManifest.xml updated")
+          PY
+
+      - name: Configure Android SDK
         run: |
           sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
           sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/g' android/app/build.gradle || true
           sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/g' android/app/build.gradle || true
 
       - name: Get dependencies
-        run: |
-          export PATH="$HOME/flutter/bin:$PATH"
-          flutter pub get
+        run: flutter pub get
 
       - name: Build APK
-        run: |
-          export PATH="$HOME/flutter/bin:$PATH"
-          flutter build apk --release
+        run: flutter build apk --release
 
       - name: Upload APK Artifact
         uses: actions/upload-artifact@v4
