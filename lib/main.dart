@@ -35,8 +35,53 @@ Future<void> saveQuizHistory() async {
   await appPrefs.setString('quizHistory', jsonEncode(quizHistory.map((e) => e.toJson()).toList()));
 }
 
-const islamicBookUrl =
-    'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/preview';
+const firstGradeBooks = <Map<String, String>>[
+  {
+    'title': 'كتاب التربية الإسلامية',
+    'subject': 'الإسلامية',
+    'url': 'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/view',
+  },
+  {
+    'title': 'كتاب القراءة',
+    'subject': 'اللغة العربية',
+    'url': 'https://drive.google.com/file/d/1vAgdbV5NNjyQ4k_LxzTiIHg7sVypX93Z/view',
+  },
+  {
+    'title': 'كتاب اللغة الإنكليزية',
+    'subject': 'اللغة الإنكليزية',
+    'url': 'https://drive.google.com/file/d/12cLRJZ0Re6aOrG_rM2JGFAiR1t_kvQIa/view',
+  },
+  {
+    'title': 'نشاط اللغة الإنكليزية',
+    'subject': 'اللغة الإنكليزية',
+    'url': 'https://drive.google.com/file/d/1V0JkjgaYztH9LsEAKQR-BkUwpjig8xeV/view',
+  },
+  {
+    'title': 'كتاب الرياضيات',
+    'subject': 'الرياضيات',
+    'url': 'https://drive.google.com/file/d/1KsxJxe0W5h-feD1jL0i9YVitoprbeRd1/view',
+  },
+  {
+    'title': 'نشاط الرياضيات',
+    'subject': 'الرياضيات',
+    'url': 'https://drive.google.com/file/d/1DG7fL9MfuL5NqTDuG7hRa5aaD9vqmM79/view',
+  },
+  {
+    'title': 'كتاب العلوم',
+    'subject': 'العلوم',
+    'url': 'https://drive.google.com/file/d/11TqMbf2GqbldP8DwCiRV2R8lsSay89oF/view',
+  },
+  {
+    'title': 'نشاط العلوم',
+    'subject': 'العلوم',
+    'url': 'https://drive.google.com/file/d/1QeJR7DsfMqkiyuI4fgW0m5CErHYIK0lu/view',
+  },
+  {
+    'title': 'كتاب الأخلاقية',
+    'subject': 'الأخلاقية',
+    'url': 'https://drive.google.com/file/d/1PQFy1vS77opnyaDWLcBz4J2rtrqmK_sZ/view',
+  },
+];
 
 const grades = [
   'الأول الابتدائي',
@@ -202,18 +247,24 @@ List<SchoolBook> makeBooks() {
   final books = <SchoolBook>[];
 
   for (final grade in grades) {
+    if (grade == 'الأول الابتدائي') {
+      // الكتب والأنشطة التي زوّدنا المستخدم بروابطها الفعلية.
+      books.addAll(firstGradeBooks.map((item) => SchoolBook(
+            title: item['title']!,
+            subject: item['subject']!,
+            grade: grade,
+            url: item['url']!,
+          )));
+      continue;
+    }
+
     for (final subject in gradeSubjectsFor(grade)) {
-      books.add(
-        SchoolBook(
-          title: 'كتاب $subject',
-          subject: subject,
-          grade: grade,
-          url: subject == 'الإسلامية' &&
-                  grade == 'الأول الابتدائي'
-              ? islamicBookUrl
-              : '',
-        ),
-      );
+      books.add(SchoolBook(
+        title: 'كتاب $subject',
+        subject: subject,
+        grade: grade,
+        url: '',
+      ));
     }
   }
 
