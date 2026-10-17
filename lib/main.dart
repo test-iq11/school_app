@@ -296,7 +296,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           foregroundColor: navy,
           elevation: 0,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -320,7 +320,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           seedColor: blue,
           brightness: Brightness.dark,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
