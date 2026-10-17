@@ -1,45 +1,41 @@
-
 name: Build Android APK
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
-      - master
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
-  build:
+  build-apk:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Flutter
+      - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
           flutter-version: '3.19.6'
           channel: stable
           cache: true
 
-      - name: Show Flutter version
-        run: flutter --version
+      # Create Android platform files if the repository contains only lib/pubspec/web.
+      - name: Generate Android project files
+        run: flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
 
-      - name: Get dependencies
+      - name: Install dependencies
         run: flutter pub get
 
-      - name: Create Android project files
-        run: flutter create . --platforms=android
-
-      - name: Get dependencies again
-        run: flutter pub get
-
-      - name: Build APK
+      - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload APK
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: iraqi-curriculum-library-apk
           path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
