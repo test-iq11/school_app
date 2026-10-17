@@ -18,13 +18,24 @@ jobs:
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.19.6'
+          flutter-version: '3.47.7'
           channel: stable
           cache: true
 
-      # Create Android platform files if the repository contains only lib/pubspec/web.
-      - name: Generate Android project files
-        run: flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
+      - name: Verify Flutter and Dart versions
+        run: flutter --version
+
+      - name: Generate Android project files if needed
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
+          fi
+
+      - name: Configure Android Gradle for scheduled notifications
+        run: python3 tool/configure_android_gradle.py
+
+      - name: Configure permissions for offline downloads and reminders
+        run: python3 tool/configure_android_manifest.py
 
       - name: Install dependencies
         run: flutter pub get
