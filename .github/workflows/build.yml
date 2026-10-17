@@ -1,3 +1,35 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build-apk:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.47.7'
+          channel: stable
+          cache: true
+
+      - name: Verify Flutter and Dart versions
+        run: flutter --version
+
+      - name: Generate Android project files if needed
+        run: |
+          if [ ! -d android ]; then
+            flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
+          fi
 
       # Keep Android configuration directly in this workflow so a missing
       # tool/configure_android_gradle.py file cannot stop the build.
@@ -62,38 +94,3 @@
           ]
           missing = [p for p in permissions if f'android:name="{p}"' not in xml]
           if missing:
-              permission_tags = ''.join(f'\n    <uses-permission android:name="{p}" />' for p in missing)
-              pos = root_match.end()
-              xml = xml[:pos] + permission_tags + xml[pos:]
-          receivers = '''
-                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
-                  <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
-                      <intent-filter>
-                          <action android:name="android.intent.action.BOOT_COMPLETED" />
-                          <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
-                          <action android:name="android.intent.action.QUICKBOOT_POWERON" />
-                          <action android:name="com.htc.intent.action.QUICKBOOT_POWERON" />
-                      </intent-filter>
-                  </receiver>
-          '''
-          if 'com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver' not in xml:
-              if '</application>' not in xml:
-                  raise SystemExit('Closing </application> tag not found in AndroidManifest.xml.')
-              xml = xml.replace('</application>', receivers + '\n    </application>', 1)
-          manifest.write_text(xml, encoding='utf-8')
-          print('Configured Android notification permissions and scheduled-notification receivers.')
-          PY
-
-      - name: Install dependencies
-        run: flutter pub get
-
-      - name: Build release APK
-        run: flutter build apk --release
-
-      - name: Upload APK artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: iraqi-curriculum-library-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
-          if-no-files-found: error
-          retention-days: 14
