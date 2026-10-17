@@ -32,9 +32,8 @@ class _AppBootstrapState extends State<AppBootstrap> {
   }
 
   Future<void> _initialize() async {
-    appPrefs = await SharedPreferences.getInstance().timeout(
-      const Duration(seconds: 15),
-    );
+    // تم إزالة .timeout لتجنب قطع تهيئة الـ Native Plugin وحدوث خطأ NoSuchMethodError
+    appPrefs = await SharedPreferences.getInstance();
 
     final savedHistory = appPrefs.getString('quizHistory');
     if (savedHistory != null) {
@@ -48,7 +47,6 @@ class _AppBootstrapState extends State<AppBootstrap> {
         quizHistory.clear();
       }
     }
-
     // Notifications are optional; failure must not prevent the library UI.
     try {
       await StudyNotificationService.initialize().timeout(
@@ -598,20 +596,17 @@ class SchoolBook {
   final String subject;
   final String grade;
   final String url;
-
   const SchoolBook({
     required this.title,
     required this.subject,
     required this.grade,
     required this.url,
   });
-
   String get key => '$title|$grade';
 }
 
 List<SchoolBook> makeBooks() {
   final books = <SchoolBook>[];
-
   for (final grade in grades) {
     final supplied = primaryBooksByGrade[grade];
     if (supplied != null) {
@@ -621,7 +616,6 @@ List<SchoolBook> makeBooks() {
             grade: grade,
             url: item['url']!,
           )));
-      // Add clearly marked placeholders only for subjects that do not yet have a supplied link.
       for (final subject in gradeSubjectsFor(grade)) {
         if (!supplied.any((item) => item['subject'] == subject)) {
           books.add(SchoolBook(
@@ -634,7 +628,6 @@ List<SchoolBook> makeBooks() {
       }
       continue;
     }
-
     for (final subject in gradeSubjectsFor(grade)) {
       books.add(SchoolBook(
         title: 'كتاب $subject',
@@ -644,20 +637,17 @@ List<SchoolBook> makeBooks() {
       ));
     }
   }
-
   return books;
 }
 
 class IraqiLibraryApp extends StatefulWidget {
   const IraqiLibraryApp({super.key});
-
   @override
   State<IraqiLibraryApp> createState() => _IraqiLibraryAppState();
 }
 
 class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
   bool dark = appPrefs.getBool('darkMode') ?? false;
-
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
@@ -727,7 +717,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           backgroundColor: Colors.white,
           indicatorColor: const Color(0xFFE3EBFF),
           surfaceTintColor: Colors.transparent,
-          labelTextStyle: MaterialStateProperty.all(
+          labelTextStyle: WidgetStateProperty.all(
             const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
           ),
         ),
@@ -800,7 +790,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           backgroundColor: const Color(0xFF111B2B),
           indicatorColor: const Color(0xFF253D68),
           surfaceTintColor: Colors.transparent,
-          labelTextStyle: MaterialStateProperty.all(
+          labelTextStyle: WidgetStateProperty.all(
             const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
           ),
         ),
@@ -823,13 +813,11 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
 class LibraryHome extends StatefulWidget {
   final bool dark;
   final ValueChanged<bool> onDarkChanged;
-
   const LibraryHome({
     super.key,
     required this.dark,
     required this.onDarkChanged,
   });
-
   @override
   State<LibraryHome> createState() => _LibraryHomeState();
 }
@@ -843,7 +831,6 @@ class _LibraryHomeState extends State<LibraryHome> {
   final searchController = TextEditingController();
   final savedBookKeys = <String>{};
   final downloadingBookKeys = <String>{};
-
   String selectedGrade = grades.first;
   String selectedDifficulty = 'متوسط';
   String search = '';
@@ -903,7 +890,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     final source = page == 1
         ? books.where((book) => favorites.contains(book.key))
         : books.where((book) => book.grade == selectedGrade);
-
     return source.where((book) {
       final query = search.trim().toLowerCase();
       return query.isEmpty ||
@@ -988,7 +974,6 @@ class _LibraryHomeState extends State<LibraryHome> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final wide = constraints.maxWidth >= 760;
-
               return Center(
                 child: ConstrainedBox(
                   constraints: const BoxConstraints(maxWidth: 1100),
@@ -1211,7 +1196,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     final average = count == 0
         ? 0
         : (quizHistory.map((r) => r.percent).reduce((a, b) => a + b) / count).round();
-
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -1335,7 +1319,6 @@ class _LibraryHomeState extends State<LibraryHome> {
 
   Widget gradeDropdown() {
     final color = gradeColor(selectedGrade);
-
     return Container(
       decoration: BoxDecoration(
         color: Theme.of(context).cardColor,
@@ -1440,10 +1423,7 @@ class _LibraryHomeState extends State<LibraryHome> {
     );
   }
 
-  List<DropdownMenuItem<String>> _stageHeader(
-    String title,
-    Color color,
-  ) {
+  List<DropdownMenuItem<String>> _stageHeader(String title, Color color) {
     return [
       DropdownMenuItem<String>(
         enabled: false,
@@ -1480,13 +1460,9 @@ class _LibraryHomeState extends State<LibraryHome> {
     ];
   }
 
-  List<DropdownMenuItem<String>> _stageGrades(
-    Iterable<String> stageGrades,
-    Color color,
-  ) {
+  List<DropdownMenuItem<String>> _stageGrades(Iterable<String> stageGrades, Color color) {
     return stageGrades.map((grade) {
       final selected = grade == selectedGrade;
-
       return DropdownMenuItem<String>(
         value: grade,
         child: Container(
@@ -1526,7 +1502,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     }).toList();
   }
 
-  // بطاقة رئيسية أقل ارتفاعاً
   Widget heroBanner() {
     return Container(
       padding: const EdgeInsets.all(20),
@@ -1654,7 +1629,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     final items = books
         .where((book) => favorites.contains(book.key))
         .toList();
-
     return ListView(
       padding: const EdgeInsets.all(18),
       children: [
@@ -1858,7 +1832,6 @@ class _LibraryHomeState extends State<LibraryHome> {
       }
       return;
     }
-
     setState(() => downloadingBookKeys.add(book.key));
     try {
       final saved = await offline.saveBookOffline(
@@ -1905,7 +1878,6 @@ class _LibraryHomeState extends State<LibraryHome> {
       showMessage('اختر وقتاً في المستقبل حتى يصل التذكير بموعده.');
       return;
     }
-
     final target = await showModalBottomSheet<String>(
       context: context,
       showDragHandle: true,
@@ -1923,7 +1895,6 @@ class _LibraryHomeState extends State<LibraryHome> {
       ),
     );
     if (target == null || !mounted) return;
-
     final endAt = startAt.add(const Duration(minutes: 45));
     final eventTitle = 'مراجعة ${book.subject} — ${book.grade}';
     final eventDescription = 'مراجعة كتاب ${book.title} من تطبيق مكتبة المناهج العراقية.';
@@ -1945,7 +1916,6 @@ class _LibraryHomeState extends State<LibraryHome> {
         'body': eventDescription,
       });
     }
-
     final reminderId = DateTime.now().millisecondsSinceEpoch.remainder(2000000000);
     final notificationScheduled = await StudyNotificationService.schedule(
       id: reminderId,
@@ -1982,7 +1952,6 @@ class _LibraryHomeState extends State<LibraryHome> {
         return StatefulBuilder(
           builder: (context, setSheetState) {
             final isFavorite = favorites.contains(book.key);
-
             return Directionality(
               textDirection: TextDirection.rtl,
               child: SafeArea(
@@ -2156,7 +2125,6 @@ class ExamsPage extends StatelessWidget {
   final String difficulty;
   final ValueChanged<String> onGradeChanged;
   final ValueChanged<String> onDifficultyChanged;
-
   const ExamsPage({
     super.key,
     required this.grade,
@@ -2164,7 +2132,6 @@ class ExamsPage extends StatelessWidget {
     required this.onGradeChanged,
     required this.onDifficultyChanged,
   });
-
   @override
   Widget build(BuildContext context) {
     final questionCount = difficulty == 'سهل' ? 10 : difficulty == 'صعب' ? 50 : 25;
@@ -2243,7 +2210,6 @@ class BookCard extends StatelessWidget {
   final VoidCallback onTap;
   final VoidCallback onDownload;
   final VoidCallback onSchedule;
-
   const BookCard({
     super.key,
     required this.book,
@@ -2255,13 +2221,11 @@ class BookCard extends StatelessWidget {
     required this.onDownload,
     required this.onSchedule,
   });
-
   @override
   Widget build(BuildContext context) {
     final color = subjectColor(book.subject);
     final hasLink = book.url.isNotEmpty;
     final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Card(
       margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
@@ -2388,13 +2352,11 @@ class BookCard extends StatelessWidget {
 class SectionHeading extends StatelessWidget {
   final String title;
   final String subtitle;
-
   const SectionHeading({
     super.key,
     required this.title,
     required this.subtitle,
   });
-
   @override
   Widget build(BuildContext context) {
     final dark = Theme.of(context).brightness == Brightness.dark;
@@ -2444,14 +2406,12 @@ class EmptyState extends StatelessWidget {
   final IconData icon;
   final String title;
   final String subtitle;
-
   const EmptyState({
     super.key,
     required this.icon,
     required this.title,
     required this.subtitle,
   });
-
   @override
   Widget build(BuildContext context) {
     return Padding(
@@ -2495,7 +2455,6 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
-
 
 class QuizResult {
   final String grade;
@@ -2566,20 +2525,26 @@ class StudyPlannerScreen extends StatefulWidget {
   @override
   State<StudyPlannerScreen> createState() => _StudyPlannerScreenState();
 }
+
 class _StudyPlannerScreenState extends State<StudyPlannerScreen> {
   final tasks = <StudyTask>[];
   final titleController = TextEditingController();
   String grade = grades.first;
   String subject = 'الإسلامية';
   DateTime due = DateTime.now().add(const Duration(days: 1));
+
   @override
   void initState() { super.initState(); _loadTasks(); }
+
   Future<void> _loadTasks() async {
     try { final raw = appPrefs.getString('studyTasks'); if (raw != null) { tasks..clear()..addAll((jsonDecode(raw) as List).map((e) => StudyTask.fromJson(Map<String, dynamic>.from(e)))); if (mounted) setState(() {}); } } catch (_) {}
   }
+
   Future<void> _saveTasks() => appPrefs.setString('studyTasks', jsonEncode(tasks.map((e) => e.toJson()).toList()));
+
   @override
   void dispose() { titleController.dispose(); super.dispose(); }
+
   Future<void> addTask() async {
     final title = titleController.text.trim();
     if (title.isEmpty) return;
@@ -2587,6 +2552,7 @@ class _StudyPlannerScreenState extends State<StudyPlannerScreen> {
     await _saveTasks();
     FocusScope.of(context).unfocus();
   }
+
   @override
   Widget build(BuildContext context) => Directionality(textDirection: TextDirection.rtl, child: Scaffold(
     appBar: AppBar(title: const Text('الجدول الدراسي')),
@@ -2619,16 +2585,21 @@ class StudyAssistantScreen extends StatefulWidget {
   @override
   State<StudyAssistantScreen> createState() => _StudyAssistantScreenState();
 }
+
 class _StudyAssistantScreenState extends State<StudyAssistantScreen> {
   final controller = TextEditingController();
   final messages = <Map<String, String>>[
     {'from': 'assistant', 'text': 'أهلاً بك! أستطيع مساعدتك بنصائح المذاكرة، وتنظيم وقتك، واقتراح طريقة لفهم الدرس. اكتب سؤالك أدناه. هذه نسخة محلية تعمل دون إنترنت وليست نموذج ذكاء اصطناعي سحابياً.'}
   ];
+
   @override
   void initState() { super.initState(); final saved = appPrefs.getString('assistantMessages'); if (saved != null) { try { messages..clear()..addAll((jsonDecode(saved) as List).map((e) => Map<String, String>.from(e))); } catch (_) {} } }
+
   Future<void> _saveMessages() => appPrefs.setString('assistantMessages', jsonEncode(messages));
+
   @override
   void dispose() { controller.dispose(); super.dispose(); }
+
   String answerFor(String q) {
     final t = q.toLowerCase();
     if (t.contains('رياضيات') || t.contains('مسألة') || t.contains('معادلة')) return 'في الرياضيات: اكتب المعطيات أولاً، ثم حدّد المطلوب، واختر القانون المناسب، وحل خطوة بخطوة. أرسل نص المسألة كاملاً لأساعدك في ترتيب خطوات الحل.';
@@ -2639,10 +2610,12 @@ class _StudyAssistantScreenState extends State<StudyAssistantScreen> {
     if (t.contains('عربي') || t.contains('نحو')) return 'في اللغة العربية، حدّد نوع الكلمة وموقعها في الجملة، ثم اربط القاعدة بمثال صحيح. دوّن مثالين من الكتاب لكل قاعدة.';
     return 'أستطيع تقديم إرشادات دراسية عامة حالياً. اكتب المادة أو موضوع الدرس بصورة أوضح، مثل: طريقة مراجعة الفيزياء أو تنظيم وقت الامتحانات. للإجابات العلمية الدقيقة ينبغي الرجوع إلى نص الكتاب المعتمد.';
   }
+
   void send() {
     final q = controller.text.trim(); if (q.isEmpty) return;
     setState(() { messages.add({'from': 'user', 'text': q}); messages.add({'from': 'assistant', 'text': answerFor(q)}); controller.clear(); }); _saveMessages();
   }
+
   @override
   Widget build(BuildContext context) => Directionality(textDirection: TextDirection.rtl, child: Scaffold(
     appBar: AppBar(title: const Text('المساعد الدراسي')),
@@ -2658,7 +2631,6 @@ class OfflineCenterScreen extends StatefulWidget {
   final ValueChanged<String>? onSaved;
   final ValueChanged<String>? onDeleted;
   const OfflineCenterScreen({super.key, required this.books, this.onSaved, this.onDeleted});
-
   @override
   State<OfflineCenterScreen> createState() => _OfflineCenterScreenState();
 }
@@ -2750,8 +2722,6 @@ class QuizQuestion {
   const QuizQuestion(this.text, this.choices, this.answer);
 }
 
-// A starter bank of general practice questions. Official textbook alignment
-// requires importing the relevant Iraqi curriculum books.
 List<QuizQuestion> makeQuizQuestions(String grade, String subject, {String difficulty = 'متوسط'}) {
   final bank = <QuizQuestion>[];
   if (subject == 'الرياضيات') {
@@ -2876,7 +2846,6 @@ List<QuizQuestion> makeQuizQuestions(String grade, String subject, {String diffi
 class FlashcardsPage extends StatefulWidget {
   final String initialGrade;
   const FlashcardsPage({super.key, this.initialGrade = 'الأول الابتدائي'});
-
   @override
   State<FlashcardsPage> createState() => _FlashcardsPageState();
 }
@@ -2943,7 +2912,7 @@ class _FlashcardsPageState extends State<FlashcardsPage> {
             const SizedBox(height: 14),
             Row(children: [
               Expanded(child: Text('البطاقة ${index + 1} من ${cards.length}', style: const TextStyle(fontWeight: FontWeight.w800))),
-              Text('${subject}', style: TextStyle(color: subjectColor(subject), fontWeight: FontWeight.w800)),
+              Text(subject, style: TextStyle(color: subjectColor(subject), fontWeight: FontWeight.w800)),
             ]),
             const SizedBox(height: 9),
             LinearProgressIndicator(value: (index + 1) / cards.length, minHeight: 6),
@@ -3012,6 +2981,7 @@ class _QuizScreenState extends State<QuizScreen> {
   int index = 0;
   bool finished = false;
   bool reviewing = false;
+
   @override
   void initState() {
     super.initState();
@@ -3019,7 +2989,9 @@ class _QuizScreenState extends State<QuizScreen> {
     final questionCount = widget.difficulty == 'سهل' ? 10 : widget.difficulty == 'صعب' ? 50 : 25;
     questions = allQuestions.take(questionCount).toList();
   }
+
   int get score => answers.entries.where((e) => questions[e.key].answer == e.value).length;
+
   Future<void> next() async {
     if (!answers.containsKey(index)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اختر إجابة أولاً')));
@@ -3041,6 +3013,7 @@ class _QuizScreenState extends State<QuizScreen> {
       setState(() => index++);
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final q = questions[index];
@@ -3077,6 +3050,7 @@ class _QuizScreenState extends State<QuizScreen> {
       ),
     );
   }
+
   Widget _result() {
     final percent = (score / questions.length * 100).round();
     return Center(child: Padding(padding: const EdgeInsets.all(24), child: Column(
@@ -3117,4 +3091,3 @@ class _QuizScreenState extends State<QuizScreen> {
     ]);
   }
 }
-
