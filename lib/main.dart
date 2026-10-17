@@ -302,7 +302,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           surfaceTintColor: Colors.transparent,
           titleSpacing: 18,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: Colors.white,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -375,7 +375,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           surfaceTintColor: Colors.transparent,
           titleSpacing: 18,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: const Color(0xFF151F30),
           elevation: 0,
           surfaceTintColor: Colors.transparent,
