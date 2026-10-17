@@ -31,66 +31,24 @@ jobs:
             flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
           fi
 
-      # Keep Android configuration directly in this workflow so a missing
-      # tool/configure_android_gradle.py file cannot stop the build.
-      - name: Configure Android Gradle and notification manifest
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
+      # These scripts are included in the project ZIP under tool/.
+      # Separate files avoid fragile inline Python heredocs in YAML.
+      - name: Configure Android Gradle for scheduled notifications
+        run: python3 tool/configure_android_gradle.py
 
-          app_dir = Path('android/app')
-          gradle_kts = app_dir / 'build.gradle.kts'
-          gradle_groovy = app_dir / 'build.gradle'
-          gradle_file = gradle_kts if gradle_kts.exists() else gradle_groovy if gradle_groovy.exists() else None
-          if gradle_file is None:
-              raise SystemExit('Android app Gradle file not found. Ensure flutter create completed successfully.')
+      - name: Configure Android manifest permissions and receivers
+        run: python3 tool/configure_android_manifest.py
 
-          gradle = gradle_file.read_text(encoding='utf-8')
-          if gradle_file.suffix == '.kts':
-              if re.search(r'compileSdk\s*=\s*flutter\.compileSdkVersion', gradle):
-                  gradle = re.sub(r'compileSdk\s*=\s*flutter\.compileSdkVersion', 'compileSdk = maxOf(flutter.compileSdkVersion, 35)', gradle, count=1)
-              elif re.search(r'compileSdk\s*=\s*\d+', gradle):
-                  gradle = re.sub(r'compileSdk\s*=\s*\d+', lambda m: 'compileSdk = maxOf(' + m.group(0).split('=')[1].strip() + ', 35)', gradle, count=1)
-              if 'isCoreLibraryDesugaringEnabled' not in gradle:
-                  gradle, n = re.subn(r'(compileOptions\s*\{)', r'\1\n        isCoreLibraryDesugaringEnabled = true', gradle, count=1)
-                  if n == 0:
-                      raise SystemExit('compileOptions block not found in Kotlin Gradle file.')
-              if re.search(r'defaultConfig\s*\{', gradle) and 'multiDexEnabled' not in gradle:
-                  gradle = re.sub(r'(defaultConfig\s*\{)', r'\1\n        multiDexEnabled = true', gradle, count=1)
-              desugar_dependency = 'coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")'
-          else:
-              if re.search(r'compileSdkVersion\s+flutter\.compileSdkVersion', gradle):
-                  gradle = re.sub(r'compileSdkVersion\s+flutter\.compileSdkVersion', 'compileSdkVersion 35', gradle, count=1)
-              elif re.search(r'compileSdk\s+flutter\.compileSdkVersion', gradle):
-                  gradle = re.sub(r'compileSdk\s+flutter\.compileSdkVersion', 'compileSdk 35', gradle, count=1)
-              if 'coreLibraryDesugaringEnabled' not in gradle:
-                  gradle, n = re.subn(r'(compileOptions\s*\{)', r'\1\n        coreLibraryDesugaringEnabled true', gradle, count=1)
-                  if n == 0:
-                      raise SystemExit('compileOptions block not found in Groovy Gradle file.')
-              if re.search(r'defaultConfig\s*\{', gradle) and 'multiDexEnabled' not in gradle:
-                  gradle = re.sub(r'(defaultConfig\s*\{)', r'\1\n        multiDexEnabled true', gradle, count=1)
-              desugar_dependency = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
+      - name: Install dependencies
+        run: flutter pub get
 
-          if 'desugar_jdk_libs' not in gradle:
-              if re.search(r'dependencies\s*\{', gradle):
-                  gradle = re.sub(r'(dependencies\s*\{)', lambda m: m.group(1) + '\n    ' + desugar_dependency, gradle, count=1)
-              else:
-                  gradle += '\n\ndependencies {\n    ' + desugar_dependency + '\n}\n'
-          gradle_file.write_text(gradle, encoding='utf-8')
-          print(f'Configured Android desugaring in {gradle_file}.')
+      - name: Build release APK
+        run: flutter build apk --release
 
-          manifest = Path('android/app/src/main/AndroidManifest.xml')
-          if not manifest.exists():
-              raise SystemExit('AndroidManifest.xml not found.')
-          xml = manifest.read_text(encoding='utf-8')
-          root_match = re.search(r'<manifest\b[^>]*>', xml)
-          if not root_match:
-              raise SystemExit('Opening <manifest> tag not found in AndroidManifest.xml.')
-          permissions = [
-              'android.permission.INTERNET',
-              'android.permission.RECEIVE_BOOT_COMPLETED',
-              'android.permission.POST_NOTIFICATIONS',
-          ]
-          missing = [p for p in permissions if f'android:name="{p}"' not in xml]
-          if missing:
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iraqi-curriculum-library-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
+          retention-days: 14
