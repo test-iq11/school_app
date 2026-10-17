@@ -1,54 +1,63 @@
+
 name: Build Android APK
 
 on:
-  push:
-    branches: [main, master]
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
 
 permissions:
   contents: read
 
 jobs:
-  build-apk:
+  build:
+    name: Build Flutter APK
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
       - name: Set up Flutter
         uses: subosito/flutter-action@v2
         with:
-          flutter-version: '3.47.7'
           channel: stable
           cache: true
 
-      - name: Verify Flutter and Dart versions
-        run: flutter --version
-
-      - name: Generate Android project files if needed
+      - name: Show Flutter and Dart versions
         run: |
-          if [ ! -d android ]; then
-            flutter create --platforms=android --project-name=iraqi_curriculum_library --org=iq.edu .
-          fi
+          flutter --version
+          dart --version
 
-      # These scripts are included in the project ZIP under tool/.
-      # Separate files avoid fragile inline Python heredocs in YAML.
-      - name: Configure Android Gradle for scheduled notifications
-        run: python3 tool/configure_android_gradle.py
-
-      - name: Configure Android manifest permissions and receivers
-        run: python3 tool/configure_android_manifest.py
+      - name: Check project files
+        run: |
+          test -f pubspec.yaml || {
+            echo "ERROR: pubspec.yaml was not found in the repository root."
+            exit 1
+          }
 
       - name: Install dependencies
         run: flutter pub get
 
+      - name: Check Dart code
+        run: dart analyze --fatal-infos
+        continue-on-error: true
+
       - name: Build release APK
         run: flutter build apk --release
 
-      - name: Upload APK artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: iraqi-curriculum-library-apk
+          name: school-app-release-apk
           path: build/app/outputs/flutter-apk/app-release.apk
           if-no-files-found: error
           retention-days: 14
