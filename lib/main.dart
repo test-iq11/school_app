@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -290,41 +289,146 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
       theme: ThemeData(
         useMaterial3: true,
         scaffoldBackgroundColor: canvas,
-        colorScheme: ColorScheme.fromSeed(seedColor: blue),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: blue,
+          brightness: Brightness.light,
+          surface: Colors.white,
+        ),
         appBarTheme: const AppBarTheme(
           backgroundColor: canvas,
           foregroundColor: navy,
           elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          titleSpacing: 18,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
-            side: const BorderSide(color: Color(0xFFE8EDF5)),
+            side: const BorderSide(color: Color(0xFFE7EDF6)),
           ),
         ),
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF8793A5)),
           border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(17),
             borderSide: BorderSide.none,
           ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(17),
+            borderSide: const BorderSide(color: Color(0xFFE4EAF3)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(17),
+            borderSide: const BorderSide(color: blue, width: 1.5),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+            textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            side: const BorderSide(color: Color(0xFFDCE5F2)),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          height: 72,
+          backgroundColor: Colors.white,
+          indicatorColor: const Color(0xFFE3EBFF),
+          surfaceTintColor: Colors.transparent,
+          labelTextStyle: MaterialStateProperty.all(
+            const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
       ),
       darkTheme: ThemeData(
         useMaterial3: true,
         brightness: Brightness.dark,
+        scaffoldBackgroundColor: const Color(0xFF0D1422),
         colorScheme: ColorScheme.fromSeed(
           seedColor: blue,
           brightness: Brightness.dark,
+          surface: const Color(0xFF151F30),
         ),
-        cardTheme: CardTheme(
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Color(0xFF0D1422),
+          foregroundColor: Color(0xFFF3F6FC),
           elevation: 0,
+          scrolledUnderElevation: 0,
+          surfaceTintColor: Colors.transparent,
+          titleSpacing: 18,
+        ),
+        cardTheme: CardThemeData(
+          color: const Color(0xFF151F30),
+          elevation: 0,
+          surfaceTintColor: Colors.transparent,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
+            side: const BorderSide(color: Color(0xFF26364B)),
           ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: const Color(0xFF151F30),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 15),
+          hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF9BA8BC)),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(17),
+            borderSide: BorderSide.none,
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(17),
+            borderSide: const BorderSide(color: Color(0xFF29374B)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(17),
+            borderSide: const BorderSide(color: Color(0xFF6B8FF5), width: 1.5),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            padding: const EdgeInsets.symmetric(horizontal: 17, vertical: 13),
+            textStyle: const TextStyle(fontWeight: FontWeight.w800),
+          ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            side: const BorderSide(color: Color(0xFF33435A)),
+            padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 12),
+            textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          ),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          height: 72,
+          backgroundColor: const Color(0xFF111B2B),
+          indicatorColor: const Color(0xFF253D68),
+          surfaceTintColor: Colors.transparent,
+          labelTextStyle: MaterialStateProperty.all(
+            const TextStyle(fontSize: 11, fontWeight: FontWeight.w800),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
         ),
       ),
       home: LibraryHome(
@@ -417,17 +521,20 @@ class _LibraryHomeState extends State<LibraryHome> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         appBar: AppBar(
-          toolbarHeight: 72,
+          toolbarHeight: 78,
           title: Row(
             children: [
               Container(
-                width: 45,
-                height: 45,
+                width: 48,
+                height: 48,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
                     colors: [blue, Color(0xFF6B8FF5)],
                   ),
-                  borderRadius: BorderRadius.circular(15),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(color: blue.withOpacity(0.22), blurRadius: 16, offset: const Offset(0, 6)),
+                  ],
                 ),
                 child: const Icon(
                   Icons.auto_stories_rounded,
@@ -639,7 +746,7 @@ class _LibraryHomeState extends State<LibraryHome> {
               crossAxisCount: wide ? 3 : 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              mainAxisExtent: 155,
+              mainAxisExtent: 178,
             ),
             itemBuilder: (context, index) {
               final book = visibleBooks[index];
@@ -668,24 +775,81 @@ class _LibraryHomeState extends State<LibraryHome> {
     final average = count == 0
         ? 0
         : (quizHistory.map((r) => r.percent).reduce((a, b) => a + b) / count).round();
-    return Card(
+
+    return Container(
+      decoration: BoxDecoration(
+        color: Theme.of(context).cardColor,
+        borderRadius: BorderRadius.circular(23),
+        border: Border.all(
+          color: Theme.of(context).brightness == Brightness.dark
+              ? const Color(0xFF26364B)
+              : const Color(0xFFE7EDF6),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(widget.dark ? 0.08 : 0.035),
+            blurRadius: 22,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.all(15),
         child: Row(
           children: [
             Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(color: blue.withOpacity(.10), borderRadius: BorderRadius.circular(15)),
-              child: const Icon(Icons.trending_up_rounded, color: blue, size: 27),
+              width: 50,
+              height: 50,
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  begin: Alignment.topRight,
+                  end: Alignment.bottomLeft,
+                  colors: [blue, Color(0xFF7094F8)],
+                ),
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: const Icon(Icons.trending_up_rounded, color: Colors.white, size: 27),
             ),
-            const SizedBox(width: 12),
-            Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              const Text('رحلتك الدراسية', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15)),
-              const SizedBox(height: 4),
-              Text('اختبارات منجزة: $count  •  متوسط الدرجات: $average%', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12)),
-            ])),
-            IconButton(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const ProgressScreen())), icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 17)),
+            const SizedBox(width: 13),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'رحلتك الدراسية',
+                    style: TextStyle(fontWeight: FontWeight.w900, fontSize: 15),
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    'اختبارات منجزة: $count',
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Row(
+                    children: [
+                      const Icon(Icons.insights_rounded, size: 14, color: teal),
+                      const SizedBox(width: 4),
+                      Text(
+                        'متوسط الدرجات $average%',
+                        style: const TextStyle(color: teal, fontSize: 11, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 4),
+            IconButton.filledTonal(
+              tooltip: 'عرض التقدم',
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ProgressScreen()),
+              ),
+              icon: const Icon(Icons.arrow_back_rounded, size: 19),
+            ),
           ],
         ),
       ),
@@ -694,18 +858,42 @@ class _LibraryHomeState extends State<LibraryHome> {
 
   Widget _featureShortcut({required IconData icon, required String title, required Color color, required VoidCallback onTap}) {
     return SizedBox(
-      width: 155,
+      width: 158,
       child: Card(
+        clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
           onTap: onTap,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 14),
-            child: Row(children: [
-              Container(width: 38, height: 38, decoration: BoxDecoration(color: color.withOpacity(.12), borderRadius: BorderRadius.circular(12)), child: Icon(icon, color: color, size: 21)),
-              const SizedBox(width: 9),
-              Expanded(child: Text(title, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800))),
-            ]),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                      colors: [color.withOpacity(.18), color.withOpacity(.07)],
+                    ),
+                    borderRadius: BorderRadius.circular(13),
+                  ),
+                  child: Icon(icon, color: color, size: 21),
+                ),
+                const SizedBox(width: 9),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800, height: 1.25),
+                  ),
+                ),
+                const SizedBox(width: 2),
+                Icon(Icons.chevron_left_rounded, size: 17, color: color.withOpacity(.8)),
+              ],
+            ),
           ),
         ),
       ),
@@ -908,68 +1096,90 @@ class _LibraryHomeState extends State<LibraryHome> {
   // بطاقة رئيسية أقل ارتفاعاً
   Widget heroBanner() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [Color(0xFF173B68), Color(0xFF2864E8)],
+          colors: [Color(0xFF132D50), Color(0xFF2458B9), Color(0xFF2864E8)],
+          stops: [0, .52, 1],
         ),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: BorderRadius.circular(28),
+        boxShadow: [
+          BoxShadow(color: blue.withOpacity(.22), blurRadius: 24, offset: const Offset(0, 10)),
+        ],
       ),
       child: Stack(
         children: [
           Positioned(
-            left: -6,
-            bottom: -12,
-            child: Icon(
-              Icons.auto_stories_rounded,
-              size: 100,
-              color: Colors.white.withOpacity(0.10),
-            ),
+            left: 0,
+            top: 0,
+            child: Icon(Icons.auto_stories_rounded, size: 140, color: Colors.white.withOpacity(.07)),
+          ),
+          Positioned(
+            left: 42,
+            bottom: 5,
+            child: Icon(Icons.auto_awesome_rounded, size: 34, color: Colors.white.withOpacity(.12)),
           ),
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                child: const Text(
-                  'مساحة تعلّمك',
-                  style: TextStyle(color: Colors.white, fontSize: 11),
-                ),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: 7,
+                    height: 7,
+                    decoration: const BoxDecoration(color: Color(0xFF65E0BF), shape: BoxShape.circle),
+                  ),
+                  const SizedBox(width: 7),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 11, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(.13),
+                      borderRadius: BorderRadius.circular(30),
+                      border: Border.all(color: Colors.white.withOpacity(.10)),
+                    ),
+                    child: const Text(
+                      'مساحة تعلّمك',
+                      style: TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w700),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: 14),
               const Text(
                 'كل كتبك الدراسية،\nفي مكان واحد.',
                 style: TextStyle(
                   color: Colors.white,
-                  fontSize: 22,
-                  height: 1.25,
+                  fontSize: 25,
+                  height: 1.23,
                   fontWeight: FontWeight.w900,
+                  letterSpacing: -.3,
                 ),
               ),
-              const SizedBox(height: 6),
+              const SizedBox(height: 8),
               const Text(
                 'نظّم دراستك وخلّ وصولك للمعلومة أسهل.',
-                style: TextStyle(color: Color(0xFFDCE7FF), fontSize: 12),
+                style: TextStyle(color: Color(0xFFDCE7FF), fontSize: 12, height: 1.5),
               ),
-              const SizedBox(height: 10),
+              const SizedBox(height: 15),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  _heroMetric(Icons.menu_book_rounded, '${books.length} كتاب'),
+                  _heroMetric(Icons.favorite_rounded, '${favorites.length} مفضلة'),
+                ],
+              ),
+              const SizedBox(height: 16),
               FilledButton.icon(
                 style: FilledButton.styleFrom(
                   backgroundColor: Colors.white,
                   foregroundColor: navy,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 8,
-                  ),
-                  minimumSize: const Size(0, 36),
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  minimumSize: const Size(0, 42),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
                 ),
                 onPressed: () {
                   setState(() {
@@ -979,13 +1189,29 @@ class _LibraryHomeState extends State<LibraryHome> {
                   });
                 },
                 icon: const Icon(Icons.menu_book_rounded, size: 18),
-                label: const Text(
-                  'تصفّح الكتب',
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
+                label: const Text('تصفّح الكتب', style: TextStyle(fontWeight: FontWeight.w900)),
               ),
             ],
           ),
+        ],
+      ),
+    );
+  }
+
+  Widget _heroMetric(IconData icon, String label) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(.12),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(.10)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: Colors.white, size: 15),
+          const SizedBox(width: 6),
+          Text(label, style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
         ],
       ),
     );
@@ -1019,7 +1245,7 @@ class _LibraryHomeState extends State<LibraryHome> {
               crossAxisCount: wide ? 3 : 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              mainAxisExtent: 155,
+              mainAxisExtent: 178,
             ),
             itemBuilder: (context, index) {
               final book = items[index];
@@ -1393,107 +1619,111 @@ class BookCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = subjectColor(book.subject);
+    final hasLink = book.url.isNotEmpty;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Card(
+      margin: EdgeInsets.zero,
       clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
+        borderRadius: BorderRadius.circular(22),
         child: Padding(
-          padding: const EdgeInsets.all(9),
+          padding: const EdgeInsets.fromLTRB(11, 10, 11, 8),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
                   Container(
-                    width: 39,
+                    width: 42,
                     height: 42,
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.12),
-                      borderRadius: BorderRadius.circular(12),
+                      gradient: LinearGradient(
+                        begin: Alignment.topRight,
+                        end: Alignment.bottomLeft,
+                        colors: [color.withOpacity(.20), color.withOpacity(.07)],
+                      ),
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                    child: Icon(
-                      subjectIcon(book.subject),
-                      color: color,
-                      size: 23,
-                    ),
+                    child: Icon(subjectIcon(book.subject), color: color, size: 23),
                   ),
                   const Spacer(),
-                  SizedBox(
-                    width: 35,
-                    height: 38,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      visualDensity: VisualDensity.compact,
-                      onPressed: onFavorite,
-                      tooltip: favorite
-                          ? 'إزالة من المفضلة'
-                          : 'إضافة إلى المفضلة',
-                      icon: Icon(
-                        favorite
-                            ? Icons.favorite_rounded
-                            : Icons.favorite_border_rounded,
-                        color: favorite ? Colors.redAccent : Colors.grey,
-                        size: 20,
-                      ),
+                  IconButton(
+                    constraints: const BoxConstraints.tightFor(width: 34, height: 34),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    onPressed: onFavorite,
+                    tooltip: favorite ? 'إزالة من المفضلة' : 'إضافة إلى المفضلة',
+                    icon: Icon(
+                      favorite ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: favorite ? Colors.redAccent : (isDark ? Colors.white54 : const Color(0xFF9AA6B7)),
+                      size: 19,
                     ),
                   ),
                 ],
               ),
-              const SizedBox(height: 7),
+              const SizedBox(height: 8),
               Text(
                 book.title,
-                maxLines: 1,
+                maxLines: 2,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  fontWeight: FontWeight.w900,
-                  fontSize: 13,
-                ),
+                style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 13, height: 1.25),
               ),
-              const SizedBox(height: 3),
+              const SizedBox(height: 4),
               Text(
                 book.grade,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
+                style: TextStyle(fontSize: 10, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
               const Spacer(),
               Row(
                 children: [
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onTap,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        minimumSize: const Size(0, 29),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      icon: const Icon(Icons.open_in_new_rounded, size: 14),
-                      label: const Text(
-                        'فتح',
-                        style: TextStyle(fontSize: 11),
-                      ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: (hasLink ? teal : Colors.blueGrey).withOpacity(.10),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(hasLink ? Icons.link_rounded : Icons.schedule_rounded,
+                            size: 12, color: hasLink ? teal : Colors.blueGrey),
+                        const SizedBox(width: 3),
+                        Text(
+                          hasLink ? 'متاح' : 'قريباً',
+                          style: TextStyle(
+                            color: hasLink ? teal : Colors.blueGrey,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  Expanded(
-                    child: TextButton.icon(
-                      onPressed: onDownload,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 2),
-                        minimumSize: const Size(0, 29),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        visualDensity: VisualDensity.compact,
-                      ),
-                      icon: const Icon(Icons.download_rounded, size: 15),
-                      label: const Text(
-                        'تحميل',
-                        style: TextStyle(fontSize: 11),
-                      ),
+                  const Spacer(),
+                  IconButton(
+                    tooltip: 'تحميل الكتاب',
+                    visualDensity: VisualDensity.compact,
+                    constraints: const BoxConstraints.tightFor(width: 34, height: 30),
+                    padding: EdgeInsets.zero,
+                    onPressed: onDownload,
+                    icon: Icon(Icons.download_rounded, size: 19, color: color),
+                  ),
+                  TextButton(
+                    onPressed: onTap,
+                    style: TextButton.styleFrom(
+                      minimumSize: const Size(0, 31),
+                      padding: const EdgeInsets.symmetric(horizontal: 9),
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      visualDensity: VisualDensity.compact,
+                      backgroundColor: color.withOpacity(.10),
+                      foregroundColor: color,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                     ),
+                    child: const Text('عرض', style: TextStyle(fontSize: 11, fontWeight: FontWeight.w900)),
                   ),
                 ],
               ),
@@ -1517,23 +1747,42 @@ class SectionHeading extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 19,
-            fontWeight: FontWeight.w900,
-            letterSpacing: -0.3,
+        Container(
+          width: 4,
+          height: 39,
+          margin: const EdgeInsets.only(top: 2, left: 10),
+          decoration: BoxDecoration(
+            gradient: const LinearGradient(colors: [blue, teal], begin: Alignment.topCenter, end: Alignment.bottomCenter),
+            borderRadius: BorderRadius.circular(6),
           ),
         ),
-        const SizedBox(height: 5),
-        Text(
-          subtitle,
-          style: TextStyle(
-            fontSize: 12,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: -.25,
+                  color: dark ? const Color(0xFFF2F5FB) : navy,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 12,
+                  height: 1.45,
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
         ),
       ],
@@ -1560,13 +1809,18 @@ class EmptyState extends StatelessWidget {
       child: Column(
         children: [
           Container(
-            width: 80,
-            height: 80,
+            width: 86,
+            height: 86,
             decoration: BoxDecoration(
-              color: blue.withOpacity(0.09),
+              gradient: LinearGradient(
+                begin: Alignment.topRight,
+                end: Alignment.bottomLeft,
+                colors: [blue.withOpacity(.15), teal.withOpacity(.07)],
+              ),
               shape: BoxShape.circle,
+              border: Border.all(color: blue.withOpacity(.10)),
             ),
-            child: Icon(icon, size: 37, color: blue),
+            child: Icon(icon, size: 39, color: blue),
           ),
           const SizedBox(height: 17),
           Text(
