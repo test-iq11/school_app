@@ -69,20 +69,18 @@ jobs:
               dependency = "coreLibraryDesugaring 'com.android.tools:desugar_jdk_libs:2.1.4'"
 
           if "isCoreLibraryDesugaringEnabled" not in text and "coreLibraryDesugaringEnabled" not in text:
-              pattern = r"compileOptions\s*\{"
               text, count = re.subn(
-                  pattern,
+                  r"compileOptions\s*\{",
                   lambda m: m.group(0) + "\n        " + setting,
                   text,
                   count=1
               )
               if count == 0:
-                  raise SystemExit("Could not find compileOptions block in " + str(path))
+                  raise SystemExit("Could not find compileOptions block.")
 
           if "desugar_jdk_libs" not in text:
-              pattern = r"dependencies\s*\{"
               text, count = re.subn(
-                  pattern,
+                  r"dependencies\s*\{",
                   lambda m: m.group(0) + "\n    " + dependency,
                   text,
                   count=1
@@ -93,8 +91,18 @@ jobs:
           path.write_text(text, encoding="utf-8")
           print("Desugaring configured in", path)
 
-      - name: Install Flutter dependencies
+      - name: Clean project
+        run: flutter clean
+
+      - name: Resolve dependencies
         run: flutter pub get
+
+      - name: Show shared_preferences version
+        shell: bash
+        run: |
+          flutter pub deps --style=compact > dependencies.txt
+          grep -i "shared_preferences" dependencies.txt || true
+          cat pubspec.lock | grep -A 8 "^  shared_preferences:" || true
 
       - name: Build release APK
         run: flutter build apk --release
