@@ -34,53 +34,300 @@ Future<void> saveQuizHistory() async {
   await appPrefs.setString('quizHistory', jsonEncode(quizHistory.map((e) => e.toJson()).toList()));
 }
 
-const firstGradeBooks = <Map<String, String>>[
-  {
-    'title': 'كتاب التربية الإسلامية',
-    'subject': 'الإسلامية',
-    'url': 'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/view',
-  },
-  {
-    'title': 'كتاب القراءة',
-    'subject': 'اللغة العربية',
-    'url': 'https://drive.google.com/file/d/1vAgdbV5NNjyQ4k_LxzTiIHg7sVypX93Z/view',
-  },
-  {
-    'title': 'كتاب اللغة الإنكليزية',
-    'subject': 'اللغة الإنكليزية',
-    'url': 'https://drive.google.com/file/d/12cLRJZ0Re6aOrG_rM2JGFAiR1t_kvQIa/view',
-  },
-  {
-    'title': 'نشاط اللغة الإنكليزية',
-    'subject': 'اللغة الإنكليزية',
-    'url': 'https://drive.google.com/file/d/1V0JkjgaYztH9LsEAKQR-BkUwpjig8xeV/view',
-  },
-  {
-    'title': 'كتاب الرياضيات',
-    'subject': 'الرياضيات',
-    'url': 'https://drive.google.com/file/d/1KsxJxe0W5h-feD1jL0i9YVitoprbeRd1/view',
-  },
-  {
-    'title': 'نشاط الرياضيات',
-    'subject': 'الرياضيات',
-    'url': 'https://drive.google.com/file/d/1DG7fL9MfuL5NqTDuG7hRa5aaD9vqmM79/view',
-  },
-  {
-    'title': 'كتاب العلوم',
-    'subject': 'العلوم',
-    'url': 'https://drive.google.com/file/d/11TqMbf2GqbldP8DwCiRV2R8lsSay89oF/view',
-  },
-  {
-    'title': 'نشاط العلوم',
-    'subject': 'العلوم',
-    'url': 'https://drive.google.com/file/d/1QeJR7DsfMqkiyuI4fgW0m5CErHYIK0lu/view',
-  },
-  {
-    'title': 'كتاب الأخلاقية',
-    'subject': 'الأخلاقية',
-    'url': 'https://drive.google.com/file/d/1PQFy1vS77opnyaDWLcBz4J2rtrqmK_sZ/view',
-  },
-];
+const primaryBooksByGrade = <String, List<Map<String, String>>>{
+  'الأول الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1idf1IS_S_XcSXCoDFb59tpaH41hyYEzu/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1vAgdbV5NNjyQ4k_LxzTiIHg7sVypX93Z/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/12cLRJZ0Re6aOrG_rM2JGFAiR1t_kvQIa/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1V0JkjgaYztH9LsEAKQR-BkUwpjig8xeV/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1KsxJxe0W5h-feD1jL0i9YVitoprbeRd1/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1DG7fL9MfuL5NqTDuG7hRa5aaD9vqmM79/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/11TqMbf2GqbldP8DwCiRV2R8lsSay89oF/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1QeJR7DsfMqkiyuI4fgW0m5CErHYIK0lu/view',
+    },
+    {
+      'title': 'كتاب الأخلاقية',
+      'subject': 'الأخلاقية',
+      'url': 'https://drive.google.com/file/d/1PQFy1vS77opnyaDWLcBz4J2rtrqmK_sZ/view',
+    },
+  ],
+  'الثاني الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1sgXP7NNoAYvAvc6hj_PxNzA5U_-v_MPo/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1OwLe8elhbqcr0Oe5t2Hf9mAvYfgON6w5/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1cKHbMM7vNc8eqcQ4J_GAG0lsva2Sp3hF/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1V1NhW8lQLtaAXzl-zpHWL6dU6aCcFRRn/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/13nk4HvTojF_MSSmsV_Wtp6wXoWx6wrUP/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1M7csrP8ESi_ejvEL_2WKBJLSL_VV6D2F/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1UkKWZ0aAwZyBHrfzc2C1ZWB5WvNn9l5b/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1etu-YJv82iZqH9_VOSK_UGVILHVOY6dc/view',
+    },
+    {
+      'title': 'كتاب الأخلاقية',
+      'subject': 'الأخلاقية',
+      'url': 'https://drive.google.com/file/d/1X3nIzGQCUpeK5DQqRjoT_U97AiHTBlWH/view',
+    },
+  ],
+  'الثالث الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1GNfl_jfkIZTlCAzSJJlZdfzcXp9Yg8A0/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1EujI_2O0LtoZgWVKbz4_n-CVlzSeVBuG/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/10c2x_pbyM1qUb4-2UnorIUoCiReHGpYz/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1FGACF7U-oqeEIfgqiphYsMdWbeTAFyj4/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1e7rcS2xAzfSc3PK_mx7IHRHiv94xwLmi/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1t88XP_kDtSrdPFv1gip4bJQfo2xsEgZP/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1f7RlugDalwJ3iQidd7B_bg-vpNR9cRcf/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1OCwai2pYlOg3-ujitXmNJ7LGg6jvJ4h8/view',
+    },
+  ],
+  'الرابع الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1qrQ0m3BpEpGpddG4Ga_oGxOBGbAVmdc1/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1FwlJF6FlAQYfkeThkoKcExM-WAeK3XKI/view',
+    },
+    {
+      'title': 'كتاب القواعد',
+      'subject': 'القواعد',
+      'url': 'https://drive.google.com/file/d/1ld5aGZnQLGsFoNOklylefc0CaD8ikZPY/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1od1MGHZJ_erJednreUzwC1U7YQSjuzBw/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1B6sT5nd6kj5ljdPF270igMhkrqyyvsqj/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1u0T7voKBEViq_lfBOzOABXXv-nH-UR8w/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1vuJbrL80ri-MLvkk7UXdLJuPbFKUxK3I/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1pB7l4fgD2tpDpWwSs1gfCz2kbOVjAru0/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/143YTfRRY0X6yNqf0BXs5CFjyeCus2EGT/view',
+    },
+    {
+      'title': 'كتاب الاجتماعيات',
+      'subject': 'الاجتماعيات',
+      'url': 'https://drive.google.com/file/d/119FjK-goDmppik85_g7iUGZly2qySope/view',
+    },
+  ],
+  'الخامس الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1toPZxJtvEF22aO2CFY6eTIID_mOijBPJ/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1WO4ZRerrs5DTOkhucLfmvSzDbJM-izCL/view',
+    },
+    {
+      'title': 'كتاب القواعد',
+      'subject': 'القواعد',
+      'url': 'https://drive.google.com/file/d/1yd47rq8fgGsAYUfnsB6T2jfZ6PV-9YWP/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1WsOjod92DE7jEqGpvdrrekI_OPBne17_/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/19KG6V4waG0_wgwfA3BHTbNhHMrgCcwu9/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/19Vw-FeVe5UZfHufy8U9_ZeDrPJPBv6Sh/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/19jhpW5XjFVRi0xaSu2uKTMyL-zP5Yt62/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1SxdVpZk9brkv4YRpbX_wIe1c3yrIzfkY/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1OPd-LH8vclgd4KKBGsf24X_gYB77jdgt/view',
+    },
+    {
+      'title': 'كتاب الاجتماعيات',
+      'subject': 'الاجتماعيات',
+      'url': 'https://drive.google.com/file/d/1i5RbK2zY4AfOFB1RnWkBCEYrqhSZow8s/view',
+    },
+  ],
+  'السادس الابتدائي': [
+    {
+      'title': 'كتاب التربية الإسلامية',
+      'subject': 'الإسلامية',
+      'url': 'https://drive.google.com/file/d/1Lx7OGHY5S8bqglDX_5KmgmyxRbfccpVB/view',
+    },
+    {
+      'title': 'كتاب القراءة',
+      'subject': 'اللغة العربية',
+      'url': 'https://drive.google.com/file/d/1955uM36MDE54JuC5bAvheYLocrN6pLZ_/view',
+    },
+    {
+      'title': 'كتاب القواعد',
+      'subject': 'القواعد',
+      'url': 'https://drive.google.com/file/d/1lEtZ_U_DGHadnrqHTKMe945_toxRuC0r/view',
+    },
+    {
+      'title': 'كتاب اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/1oLRTuvvg2TWLH-tx3ynPai7bU98xl3Jf/view',
+    },
+    {
+      'title': 'نشاط اللغة الإنكليزية',
+      'subject': 'اللغة الإنكليزية',
+      'url': 'https://drive.google.com/file/d/12KodkqqgIxl6C0iqV7Xj6nX_RMNY12V-/view',
+    },
+    {
+      'title': 'كتاب الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1eruXvQZRELfJn_cab2VmYYUhZ2PDq_tK/view',
+    },
+    {
+      'title': 'نشاط الرياضيات',
+      'subject': 'الرياضيات',
+      'url': 'https://drive.google.com/file/d/1WjTTipG5RW52qUZDhjmXj7uN4B0YPr1C/view',
+    },
+    {
+      'title': 'كتاب العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1hHSjYlxNHCkx8_D9ZeYtBxW7szZZ0Rdu/view',
+    },
+    {
+      'title': 'نشاط العلوم',
+      'subject': 'العلوم',
+      'url': 'https://drive.google.com/file/d/1QiJXj0Aa0fEtp2_kTkmKYQu09yIL-Ust/view',
+    },
+    {
+      'title': 'كتاب الاجتماعيات',
+      'subject': 'الاجتماعيات',
+      'url': 'https://drive.google.com/file/d/18niTWYBMKB6z5TTTwa_1J6Jn6-oE2amK/view',
+    },
+  ],
+};
 
 const grades = [
   'الأول الابتدائي',
@@ -106,7 +353,11 @@ List<String> gradeSubjectsFor(String grade) {
     final result = <String>[
       'الإسلامية', 'اللغة العربية', 'اللغة الإنكليزية', 'الرياضيات', 'العلوم',
     ];
-    if (number >= 4) result.add('الاجتماعيات');
+    if (number <= 2) result.add('الأخلاقية');
+    if (number >= 4) {
+      result.add('القواعد');
+      result.add('الاجتماعيات');
+    }
     return result;
   }
   if (grade.contains('المتوسط')) {
@@ -162,6 +413,7 @@ IconData subjectIcon(String subject) {
     case 'العلوم':
       return Icons.science_rounded;
     case 'اللغة العربية':
+    case 'القواعد':
       return Icons.menu_book_rounded;
     case 'اللغة الإنكليزية':
       return Icons.translate_rounded;
@@ -206,6 +458,7 @@ Color subjectColor(String subject) {
     case 'الجغرافية':
       return const Color(0xFF478C76);
     case 'الإسلامية':
+    case 'الأخلاقية':
       return const Color(0xFFB88A37);
     case 'الفيزياء':
       return const Color(0xFF5078CC);
@@ -246,14 +499,25 @@ List<SchoolBook> makeBooks() {
   final books = <SchoolBook>[];
 
   for (final grade in grades) {
-    if (grade == 'الأول الابتدائي') {
-      // الكتب والأنشطة التي زوّدنا المستخدم بروابطها الفعلية.
-      books.addAll(firstGradeBooks.map((item) => SchoolBook(
+    final supplied = primaryBooksByGrade[grade];
+    if (supplied != null) {
+      books.addAll(supplied.map((item) => SchoolBook(
             title: item['title']!,
             subject: item['subject']!,
             grade: grade,
             url: item['url']!,
           )));
+      // Add clearly marked placeholders only for subjects that do not yet have a supplied link.
+      for (final subject in gradeSubjectsFor(grade)) {
+        if (!supplied.any((item) => item['subject'] == subject)) {
+          books.add(SchoolBook(
+            title: 'كتاب $subject (الرابط غير متوفر حالياً)',
+            subject: subject,
+            grade: grade,
+            url: '',
+          ));
+        }
+      }
       continue;
     }
 
@@ -646,9 +910,13 @@ class _LibraryHomeState extends State<LibraryHome> {
           subtitle: 'اختصارات تساعدك على تنظيم الدراسة والمراجعة',
         ),
         const SizedBox(height: 12),
-        Wrap(
-          spacing: 10,
-          runSpacing: 10,
+        GridView.count(
+          crossAxisCount: 2,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          crossAxisSpacing: 10,
+          mainAxisSpacing: 10,
+          childAspectRatio: wide ? 2.05 : 1.55,
           children: [
             _featureShortcut(
               icon: Icons.calendar_month_rounded,
@@ -857,9 +1125,7 @@ class _LibraryHomeState extends State<LibraryHome> {
   }
 
   Widget _featureShortcut({required IconData icon, required String title, required Color color, required VoidCallback onTap}) {
-    return SizedBox(
-      width: 158,
-      child: Card(
+    return Card(
         clipBehavior: Clip.antiAlias,
         child: InkWell(
           borderRadius: BorderRadius.circular(22),
@@ -896,7 +1162,6 @@ class _LibraryHomeState extends State<LibraryHome> {
             ),
           ),
         ),
-      ),
     );
   }
 
@@ -2145,7 +2410,9 @@ List<QuizQuestion> makeQuizQuestions(String grade, String subject) {
   for (var i = 0; i < 100; i++) {
     final raw = subjectPool[i % subjectPool.length];
     final choices = raw.sublist(1).toList();
-    bank.add(QuizQuestion(raw[0], choices, 0));
+    final correctAnswer = choices.first;
+    choices.shuffle();
+    bank.add(QuizQuestion(raw[0], choices, choices.indexOf(correctAnswer)));
   }
   return bank;
 }
