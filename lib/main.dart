@@ -1,4 +1,4 @@
-
+```dart
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 
@@ -87,7 +87,6 @@ List<String> gradeSubjectsFor(String grade) {
     return result;
   }
 
-  // المواد الأدبية من دون الحاسوب.
   return [
     'الإسلامية',
     'اللغة العربية',
@@ -106,16 +105,28 @@ Color gradeColor(String grade) {
 }
 
 String gradeStage(String grade) {
-  if (grade.contains('الابتدائي')) return 'المرحلة الابتدائية';
-  if (grade.contains('المتوسط')) return 'المرحلة المتوسطة';
+  if (grade.contains('الابتدائي')) {
+    return 'المرحلة الابتدائية';
+  }
+  if (grade.contains('المتوسط')) {
+    return 'المرحلة المتوسطة';
+  }
   return 'المرحلة الإعدادية';
 }
 
 IconData gradeIcon(String grade) {
-  if (grade.contains('الابتدائي')) return Icons.child_care_rounded;
-  if (grade.contains('المتوسط')) return Icons.school_rounded;
-  if (grade.contains('العلمي')) return Icons.science_rounded;
-  if (grade.contains('الأدبي')) return Icons.menu_book_rounded;
+  if (grade.contains('الابتدائي')) {
+    return Icons.child_care_rounded;
+  }
+  if (grade.contains('المتوسط')) {
+    return Icons.school_rounded;
+  }
+  if (grade.contains('العلمي')) {
+    return Icons.science_rounded;
+  }
+  if (grade.contains('الأدبي')) {
+    return Icons.menu_book_rounded;
+  }
   return Icons.school_rounded;
 }
 
@@ -264,7 +275,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           foregroundColor: navy,
           elevation: 0,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           color: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
@@ -290,7 +301,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           seedColor: blue,
           brightness: Brightness.dark,
         ),
-        cardTheme: CardThemeData(
+        cardTheme: CardTheme(
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(22),
@@ -821,7 +832,6 @@ class _LibraryHomeState extends State<LibraryHome> {
     }).toList();
   }
 
-  // بطاقة زرقاء أقصر مع المحافظة على الألوان والتصميم.
   Widget heroBanner() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1602,3 +1612,4 @@ class EmptyState extends StatelessWidget {
     );
   }
 }
+```
