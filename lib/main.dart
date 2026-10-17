@@ -10,19 +10,129 @@ late SharedPreferences appPrefs;
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  appPrefs = await SharedPreferences.getInstance();
-  final savedHistory = appPrefs.getString('quizHistory');
-  if (savedHistory != null) {
-    try {
-      quizHistory
-        ..clear()
-        ..addAll((jsonDecode(savedHistory) as List).map((e) => QuizResult.fromJson(Map<String, dynamic>.from(e))));
-    } catch (_) {
-      quizHistory.clear();
-    }
+  runApp(const AppBootstrap());
+}
+
+/// Loads platform services after Flutter has already displayed a startup UI.
+/// This prevents a failed plugin initialization from leaving a blank screen.
+class AppBootstrap extends StatefulWidget {
+  const AppBootstrap({super.key});
+
+  @override
+  State<AppBootstrap> createState() => _AppBootstrapState();
+}
+
+class _AppBootstrapState extends State<AppBootstrap> {
+  late Future<void> _startup;
+
+  @override
+  void initState() {
+    super.initState();
+    _startup = _initialize();
   }
-  await StudyNotificationService.initialize();
-  runApp(const IraqiLibraryApp());
+
+  Future<void> _initialize() async {
+    appPrefs = await SharedPreferences.getInstance().timeout(
+      const Duration(seconds: 15),
+    );
+
+    final savedHistory = appPrefs.getString('quizHistory');
+    if (savedHistory != null) {
+      try {
+        quizHistory
+          ..clear()
+          ..addAll((jsonDecode(savedHistory) as List).map(
+            (e) => QuizResult.fromJson(Map<String, dynamic>.from(e)),
+          ));
+      } catch (_) {
+        quizHistory.clear();
+      }
+    }
+
+    // Notifications are optional; failure must not prevent the library UI.
+    try {
+      await StudyNotificationService.initialize().timeout(
+        const Duration(seconds: 5),
+      );
+    } catch (_) {}
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<void>(
+      future: _startup,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.done &&
+            !snapshot.hasError) {
+          return const IraqiLibraryApp();
+        }
+        if (snapshot.hasError) {
+          return MaterialApp(
+            debugShowCheckedModeBanner: false,
+            home: Scaffold(
+              backgroundColor: const Color(0xFFF4F7FC),
+              body: SafeArea(
+                child: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.error_outline_rounded,
+                            color: Color(0xFFB42318), size: 54),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'تعذّر تشغيل التطبيق',
+                          style: TextStyle(
+                              fontSize: 22, fontWeight: FontWeight.bold),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 10),
+                        const Text(
+                          'حدث خطأ أثناء تهيئة التخزين على الهاتف. اضغط إعادة المحاولة.',
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 12),
+                        SelectableText(
+                          snapshot.error.toString(),
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(fontSize: 11),
+                        ),
+                        const SizedBox(height: 20),
+                        FilledButton.icon(
+                          onPressed: () => setState(() {
+                            _startup = _initialize();
+                          }),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('إعادة المحاولة'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          );
+        }
+        return const MaterialApp(
+          debugShowCheckedModeBanner: false,
+          home: Scaffold(
+            backgroundColor: Color(0xFFF4F7FC),
+            body: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CircularProgressIndicator(),
+                  SizedBox(height: 18),
+                  Text('جارٍ تجهيز مكتبتك الدراسية...'),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 const navy = Color(0xFF142D4E);
