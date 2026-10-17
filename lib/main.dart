@@ -1,7 +1,10 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'services/offline_book_storage.dart' as offline;
+import 'services/study_notification_service.dart';
 
 late SharedPreferences appPrefs;
 
@@ -18,6 +21,7 @@ Future<void> main() async {
       quizHistory.clear();
     }
   }
+  await StudyNotificationService.initialize();
   runApp(const IraqiLibraryApp());
 }
 
@@ -566,7 +570,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           surfaceTintColor: Colors.transparent,
           titleSpacing: 18,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: Colors.white,
           elevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -639,7 +643,7 @@ class _IraqiLibraryAppState extends State<IraqiLibraryApp> {
           surfaceTintColor: Colors.transparent,
           titleSpacing: 18,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           color: const Color(0xFF151F30),
           elevation: 0,
           surfaceTintColor: Colors.transparent,
@@ -727,8 +731,11 @@ class _LibraryHomeState extends State<LibraryHome> {
   bool dataLoaded = false;
   final noteController = TextEditingController();
   final searchController = TextEditingController();
+  final savedBookKeys = <String>{};
+  final downloadingBookKeys = <String>{};
 
   String selectedGrade = grades.first;
+  String selectedDifficulty = 'متوسط';
   String search = '';
   int page = 0;
 
@@ -747,7 +754,36 @@ class _LibraryHomeState extends State<LibraryHome> {
       ..addAll(appPrefs.getStringList('notes') ?? const <String>[]);
     final savedGrade = appPrefs.getString('selectedGrade');
     if (savedGrade != null && grades.contains(savedGrade)) selectedGrade = savedGrade;
+    selectedDifficulty = appPrefs.getString('selectedDifficulty') ?? 'متوسط';
+    if (!const ['سهل', 'متوسط', 'صعب'].contains(selectedDifficulty)) selectedDifficulty = 'متوسط';
+    try {
+      final savedBooks = await offline.loadOfflineBooks();
+      savedBookKeys
+        ..clear()
+        ..addAll(savedBooks.map((b) => b.key));
+    } catch (_) {}
     if (mounted) setState(() => dataLoaded = true);
+    await _checkCatalogUpdates();
+  }
+
+  Future<void> _checkCatalogUpdates() async {
+    final signature = books.map((b) => '${b.key}:${b.url}').join('||');
+    final previous = appPrefs.getString('bookCatalogSignature');
+    await appPrefs.setString('bookCatalogSignature', signature);
+    if (previous != null && previous != signature) {
+      final notified = await StudyNotificationService.showNow(
+        id: 4101,
+        title: 'تحديث مكتبة الكتب',
+        body: 'تمت إضافة كتاب أو تحديث رابط أحد الكتب في مكتبة المناهج.',
+      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+          content: Text(notified
+              ? 'تم تحديث مكتبة الكتب، وأُرسل إشعار بالتحديث.'
+              : 'تم تحديث روابط مكتبة الكتب.'),
+        ));
+      }
+    }
   }
 
   Future<void> _saveFavorites() => appPrefs.setStringList('favorites', favorites.toList());
@@ -940,9 +976,28 @@ class _LibraryHomeState extends State<LibraryHome> {
               icon: Icons.offline_pin_rounded,
               title: 'التنزيلات',
               color: const Color(0xFFB7791F),
-              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OfflineCenterScreen(books: books))),
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => OfflineCenterScreen(books: books, onSaved: (key) => setState(() => savedBookKeys.add(key)), onDeleted: (key) => setState(() => savedBookKeys.remove(key))))),
             ),
           ],
+        ),
+        const SizedBox(height: 10),
+        Card(
+          clipBehavior: Clip.antiAlias,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+            leading: Container(
+              width: 46,
+              height: 46,
+              decoration: BoxDecoration(color: purple.withOpacity(.12), borderRadius: BorderRadius.circular(14)),
+              child: const Icon(Icons.style_rounded, color: purple),
+            ),
+            title: const Text('بطاقات المراجعة', style: TextStyle(fontWeight: FontWeight.w900)),
+            subtitle: const Text('اقلب البطاقات لاختبار تذكّرك للمعلومة'),
+            trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+            onTap: () => Navigator.push(context, MaterialPageRoute(
+              builder: (_) => FlashcardsPage(initialGrade: selectedGrade),
+            )),
+          ),
         ),
         const SizedBox(height: 24),
         const SectionHeading(
@@ -1021,9 +1076,12 @@ class _LibraryHomeState extends State<LibraryHome> {
               return BookCard(
                 book: book,
                 favorite: favorites.contains(book.key),
+                offlineSaved: savedBookKeys.contains(book.key),
+                downloading: downloadingBookKeys.contains(book.key),
                 onFavorite: () => toggleFavorite(book),
                 onTap: () => openBook(book),
                 onDownload: () => downloadBook(book),
+                onSchedule: () => scheduleBookReview(book),
               );
             },
           ),
@@ -1517,9 +1575,12 @@ class _LibraryHomeState extends State<LibraryHome> {
               return BookCard(
                 book: book,
                 favorite: true,
+                offlineSaved: savedBookKeys.contains(book.key),
+                downloading: downloadingBookKeys.contains(book.key),
                 onFavorite: () => toggleFavorite(book),
                 onTap: () => openBook(book),
                 onDownload: () => downloadBook(book),
+                onSchedule: () => scheduleBookReview(book),
               );
             },
           ),
@@ -1527,51 +1588,18 @@ class _LibraryHomeState extends State<LibraryHome> {
     );
   }
 
-  Widget buildExams() {
-    return ListView(
-      padding: const EdgeInsets.all(18),
-      children: [
-        const SectionHeading(
-          title: 'مركز الاختبارات',
-          subtitle: 'اختر الصف والمادة لبدء اختبار من 100 سؤال مع التصحيح التلقائي',
-        ),
-        const SizedBox(height: 18),
-        DropdownButtonFormField<String>(
-          value: selectedGrade,
-          decoration: const InputDecoration(labelText: 'الصف الدراسي'),
-          items: grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
-          onChanged: (value) {
-            if (value != null) { setState(() => selectedGrade = value); appPrefs.setString('selectedGrade', value); }
-          },
-        ),
-        const SizedBox(height: 14),
-        const Text('مواد هذا الصف', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
-        const SizedBox(height: 10),
-        ...gradeSubjectsFor(selectedGrade).map((subject) => Card(
-          margin: const EdgeInsets.only(bottom: 10),
-          child: ListTile(
-            leading: CircleAvatar(
-              backgroundColor: subjectColor(subject).withOpacity(.12),
-              child: Icon(subjectIcon(subject), color: subjectColor(subject)),
-            ),
-            title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
-            subtitle: const Text('100 سؤال اختيار من متعدد'),
-            trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
-            onTap: () {
-              Navigator.push(context, MaterialPageRoute(
-                builder: (_) => QuizScreen(grade: selectedGrade, subject: subject),
-              ));
-            },
-          ),
-        )),
-        const SizedBox(height: 8),
-        const Text(
-          'تنبيه: بنك الأسئلة الحالي تجريبي/عام. لمطابقة الأسئلة حرفياً مع طبعات المنهج العراقي، أرسل كتب المواد بصيغة PDF ليتم إعداد بنك موثّق لكل صف.',
-          style: TextStyle(fontSize: 12, height: 1.6, color: Colors.grey),
-        ),
-      ],
-    );
-  }
+  Widget buildExams() => ExamsPage(
+        grade: selectedGrade,
+        difficulty: selectedDifficulty,
+        onGradeChanged: (value) {
+          setState(() => selectedGrade = value);
+          appPrefs.setString('selectedGrade', value);
+        },
+        onDifficultyChanged: (value) {
+          setState(() => selectedDifficulty = value);
+          appPrefs.setString('selectedDifficulty', value);
+        },
+      );
 
   Widget buildNotes() {
     return ListView(
@@ -1652,6 +1680,29 @@ class _LibraryHomeState extends State<LibraryHome> {
             onChanged: widget.onDarkChanged,
           ),
         ),
+        Card(
+          child: ListTile(
+            leading: const Icon(Icons.notifications_active_rounded, color: teal),
+            title: const Text('إشعارات المذاكرة'),
+            subtitle: const Text('تذكير بمراجعة مادة أو عند تحديث روابط الكتب'),
+            trailing: IconButton(
+              tooltip: 'اختبار الإشعار',
+              icon: const Icon(Icons.send_rounded),
+              onPressed: () async {
+                final shown = await StudyNotificationService.showNow(
+                  id: 4102,
+                  title: 'مكتبة المناهج العراقية',
+                  body: 'هذا إشعار تجريبي لتذكيرك بالمذاكرة.',
+                );
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(
+                  kIsWeb ? 'إشعارات النظام المجدولة غير متاحة في هذه المعاينة. جرّب نسخة Android.' : shown ? 'تم إرسال إشعار تجريبي.' : 'لم يُرسل الإشعار. تحقق من صلاحية الإشعارات في إعدادات الجهاز.',
+                )));
+              },
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
         const Card(
           child: ListTile(
             leading: Icon(Icons.school_rounded),
@@ -1681,21 +1732,134 @@ class _LibraryHomeState extends State<LibraryHome> {
     );
   }
 
-  void downloadBook(SchoolBook book) {
+  Future<void> downloadBook(SchoolBook book) async {
     if (book.url.isEmpty) {
       showMessage('رابط تحميل هذا الكتاب غير متوفر حالياً.');
       return;
     }
+    if (kIsWeb) {
+      final id = RegExp(r'/d/([^/?]+)').firstMatch(book.url)?.group(1);
+      final directUrl = id == null ? book.url : 'https://drive.google.com/uc?export=download&id=$id';
+      final opened = await launchUrl(Uri.parse(directUrl), mode: LaunchMode.externalApplication);
+      if (mounted) {
+        showMessage(opened
+            ? 'بدأ تنزيل الملف من المتصفح. لحفظ نسخة داخل التطبيق دون إنترنت استخدم نسخة Android.'
+            : 'تعذر فتح رابط التنزيل. جرّب فتح الكتاب أولاً.');
+      }
+      return;
+    }
 
-    final match = RegExp(r'/d/([^/]+)').firstMatch(book.url);
+    setState(() => downloadingBookKeys.add(book.key));
+    try {
+      final saved = await offline.saveBookOffline(
+        key: book.key,
+        title: book.title,
+        grade: book.grade,
+        subject: book.subject,
+        url: book.url,
+      );
+      if (saved != null) {
+        setState(() => savedBookKeys.add(book.key));
+        showMessage('تم تنزيل «${book.title}» وحفظه للقراءة دون إنترنت.');
+      } else {
+        showMessage('لم تُحفظ النسخة محلياً. افتح رابط الكتاب وتأكد من إتاحته للتنزيل.');
+        final id = RegExp(r'/d/([^/?]+)').firstMatch(book.url)?.group(1);
+        final directUrl = id == null ? book.url : 'https://drive.google.com/uc?export=download&id=$id';
+        await launchUrl(Uri.parse(directUrl), mode: LaunchMode.externalApplication);
+      }
+    } catch (e) {
+      showMessage('تعذر حفظ الكتاب: $e');
+    } finally {
+      if (mounted) setState(() => downloadingBookKeys.remove(book.key));
+    }
+  }
 
-    if (match != null) {
-      final fileId = match.group(1)!;
-      final downloadUrl =
-          'https://drive.google.com/uc?export=download&id=$fileId';
-      launchUrl(Uri.parse(downloadUrl), mode: LaunchMode.externalApplication);
+  Future<void> scheduleBookReview(SchoolBook book) async {
+    final now = DateTime.now();
+    final selectedDate = await showDatePicker(
+      context: context,
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: DateTime(now.year, now.month, now.day),
+      lastDate: DateTime(now.year + 5),
+      helpText: 'اختر يوم المراجعة',
+    );
+    if (selectedDate == null || !mounted) return;
+    final selectedTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 19, minute: 0),
+      helpText: 'اختر وقت المراجعة',
+    );
+    if (selectedTime == null || !mounted) return;
+    final startAt = DateTime(selectedDate.year, selectedDate.month, selectedDate.day, selectedTime.hour, selectedTime.minute);
+    if (!startAt.isAfter(DateTime.now())) {
+      showMessage('اختر وقتاً في المستقبل حتى يصل التذكير بموعده.');
+      return;
+    }
+
+    final target = await showModalBottomSheet<String>(
+      context: context,
+      showDragHandle: true,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: SafeArea(child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 4, 16, 22),
+          child: Column(mainAxisSize: MainAxisSize.min, children: [
+            const Text('إضافة المراجعة إلى التقويم', style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+            const SizedBox(height: 8),
+            ListTile(leading: const Icon(Icons.calendar_month_rounded, color: blue), title: const Text('Google Calendar'), subtitle: const Text('إضافة حدث إلى تقويم Google'), onTap: () => Navigator.pop(ctx, 'google')),
+            ListTile(leading: const Icon(Icons.event_available_rounded, color: teal), title: const Text('Outlook Calendar'), subtitle: const Text('إضافة حدث إلى تقويم Outlook'), onTap: () => Navigator.pop(ctx, 'outlook')),
+          ]),
+        )),
+      ),
+    );
+    if (target == null || !mounted) return;
+
+    final endAt = startAt.add(const Duration(minutes: 45));
+    final eventTitle = 'مراجعة ${book.subject} — ${book.grade}';
+    final eventDescription = 'مراجعة كتاب ${book.title} من تطبيق مكتبة المناهج العراقية.';
+    Uri eventUri;
+    if (target == 'google') {
+      String googleDate(DateTime d) => '${d.year.toString().padLeft(4, '0')}${d.month.toString().padLeft(2, '0')}${d.day.toString().padLeft(2, '0')}T${d.hour.toString().padLeft(2, '0')}${d.minute.toString().padLeft(2, '0')}00';
+      eventUri = Uri.https('calendar.google.com', '/calendar/render', {
+        'action': 'TEMPLATE',
+        'text': eventTitle,
+        'dates': '${googleDate(startAt)}/${googleDate(endAt)}',
+        'ctz': 'Asia/Baghdad',
+        'details': eventDescription,
+      });
     } else {
-      launchUrl(Uri.parse(book.url), mode: LaunchMode.externalApplication);
+      eventUri = Uri.https('outlook.live.com', '/calendar/0/deeplink/compose', {
+        'subject': eventTitle,
+        'startdt': startAt.toIso8601String(),
+        'enddt': endAt.toIso8601String(),
+        'body': eventDescription,
+      });
+    }
+
+    final reminderId = DateTime.now().millisecondsSinceEpoch.remainder(2000000000);
+    final notificationScheduled = await StudyNotificationService.schedule(
+      id: reminderId,
+      title: 'موعد مراجعة دراسية',
+      body: 'حان وقت مراجعة ${book.subject} — ${book.grade}.',
+      dateTime: startAt,
+    );
+    final reminders = appPrefs.getStringList('studyReminders') ?? <String>[];
+    reminders.add(jsonEncode({
+      'id': reminderId,
+      'title': eventTitle,
+      'grade': book.grade,
+      'subject': book.subject,
+      'startAt': startAt.toIso8601String(),
+      'provider': target,
+    }));
+    await appPrefs.setStringList('studyReminders', reminders);
+    final launched = await launchUrl(eventUri, mode: LaunchMode.externalApplication);
+    if (mounted) {
+      showMessage(launched
+          ? (notificationScheduled
+              ? 'فتح التقويم وتم إعداد تذكير مراجعة للمادة.'
+              : 'فتح التقويم. في نسخة الويب أو عند منع الإشعارات، احفظ الحدث في التقويم لإتمام التذكير.')
+          : 'حُفظ موعد المراجعة في التطبيق، لكن تعذر فتح التقويم.');
     }
   }
 
@@ -1777,15 +1941,18 @@ class _LibraryHomeState extends State<LibraryHome> {
                                   horizontal: 5,
                                 ),
                               ),
-                              onPressed: () {
-                                if (book.url.isEmpty) {
-                                  showMessage(
-                                    'رابط هذا الكتاب غير متوفر حالياً.',
-                                  );
+                              onPressed: () async {
+                                if (book.url.isEmpty && !savedBookKeys.contains(book.key)) {
+                                  showMessage('رابط هذا الكتاب غير متوفر حالياً.');
                                   return;
                                 }
                                 Navigator.pop(sheetContext);
-                                launchUrl(Uri.parse(book.url), mode: LaunchMode.externalApplication);
+                                if (!kIsWeb && await offline.openOfflineBook(book.key)) return;
+                                if (book.url.isNotEmpty) {
+                                  await launchUrl(Uri.parse(book.url), mode: LaunchMode.externalApplication);
+                                } else {
+                                  showMessage('تعذر فتح النسخة المحفوظة.');
+                                }
                               },
                               child: const Column(
                                 mainAxisSize: MainAxisSize.min,
@@ -1853,6 +2020,15 @@ class _LibraryHomeState extends State<LibraryHome> {
                           ),
                         ],
                       ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: () => scheduleBookReview(book),
+                          icon: const Icon(Icons.event_available_rounded),
+                          label: const Text('جدولة مراجعة في Google أو Outlook'),
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -1865,20 +2041,109 @@ class _LibraryHomeState extends State<LibraryHome> {
   }
 }
 
+class ExamsPage extends StatelessWidget {
+  final String grade;
+  final String difficulty;
+  final ValueChanged<String> onGradeChanged;
+  final ValueChanged<String> onDifficultyChanged;
+
+  const ExamsPage({
+    super.key,
+    required this.grade,
+    required this.difficulty,
+    required this.onGradeChanged,
+    required this.onDifficultyChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final questionCount = difficulty == 'سهل' ? 10 : difficulty == 'صعب' ? 50 : 25;
+    return ListView(
+      padding: const EdgeInsets.all(18),
+      children: [
+        const SectionHeading(
+          title: 'مركز الاختبارات',
+          subtitle: 'اختبارات تفاعلية، تصحيح تلقائي، وسجل دائم للنتائج',
+        ),
+        const SizedBox(height: 18),
+        DropdownButtonFormField<String>(
+          value: grade,
+          decoration: const InputDecoration(labelText: 'الصف الدراسي'),
+          items: grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+          onChanged: (value) { if (value != null) onGradeChanged(value); },
+        ),
+        const SizedBox(height: 12),
+        DropdownButtonFormField<String>(
+          value: difficulty,
+          decoration: const InputDecoration(labelText: 'مستوى الصعوبة'),
+          items: const [
+            DropdownMenuItem(value: 'سهل', child: Text('سهل — 10 أسئلة')),
+            DropdownMenuItem(value: 'متوسط', child: Text('متوسط — 25 سؤالاً')),
+            DropdownMenuItem(value: 'صعب', child: Text('صعب — 50 سؤالاً')),
+          ],
+          onChanged: (value) { if (value != null) onDifficultyChanged(value); },
+        ),
+        const SizedBox(height: 14),
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(13),
+            child: Row(children: [
+              const Icon(Icons.tune_rounded, color: blue),
+              const SizedBox(width: 10),
+              Expanded(child: Text('المستوى المحدد: $difficulty • $questionCount سؤالاً في الاختبار', style: const TextStyle(fontWeight: FontWeight.w700))),
+            ]),
+          ),
+        ),
+        const SizedBox(height: 14),
+        const Text('مواد هذا الصف', style: TextStyle(fontSize: 17, fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        ...gradeSubjectsFor(grade).map((subject) => Card(
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListTile(
+            leading: CircleAvatar(
+              backgroundColor: subjectColor(subject).withOpacity(.12),
+              child: Icon(subjectIcon(subject), color: subjectColor(subject)),
+            ),
+            title: Text(subject, style: const TextStyle(fontWeight: FontWeight.bold)),
+            subtitle: Text('$difficulty • $questionCount سؤالاً اختيارياً'),
+            trailing: const Icon(Icons.arrow_back_ios_new_rounded, size: 16),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => QuizScreen(grade: grade, subject: subject, difficulty: difficulty),
+              ));
+            },
+          ),
+        )),
+        const SizedBox(height: 8),
+        const Text(
+          'ملاحظة: بنك الأسئلة الحالي تدريبي عام. للحصول على اختبار مطابق حرفياً للمنهج العراقي، يجب إعداد بنك أسئلة موثق من ملفات الكتب المعتمدة.',
+          style: TextStyle(fontSize: 12, height: 1.6, color: Colors.grey),
+        ),
+      ],
+    );
+  }
+}
+
 class BookCard extends StatelessWidget {
   final SchoolBook book;
   final bool favorite;
+  final bool offlineSaved;
+  final bool downloading;
   final VoidCallback onFavorite;
   final VoidCallback onTap;
   final VoidCallback onDownload;
+  final VoidCallback onSchedule;
 
   const BookCard({
     super.key,
     required this.book,
     required this.favorite,
+    required this.offlineSaved,
+    required this.downloading,
     required this.onFavorite,
     required this.onTap,
     required this.onDownload,
+    required this.onSchedule,
   });
 
   @override
@@ -1914,6 +2179,14 @@ class BookCard extends StatelessWidget {
                     child: Icon(subjectIcon(book.subject), color: color, size: 23),
                   ),
                   const Spacer(),
+                  IconButton(
+                    constraints: const BoxConstraints.tightFor(width: 30, height: 34),
+                    padding: EdgeInsets.zero,
+                    visualDensity: VisualDensity.compact,
+                    tooltip: 'جدولة مراجعة',
+                    onPressed: onSchedule,
+                    icon: Icon(Icons.event_available_rounded, color: color, size: 18),
+                  ),
                   IconButton(
                     constraints: const BoxConstraints.tightFor(width: 34, height: 34),
                     padding: EdgeInsets.zero,
@@ -1970,12 +2243,14 @@ class BookCard extends StatelessWidget {
                   ),
                   const Spacer(),
                   IconButton(
-                    tooltip: 'تحميل الكتاب',
+                    tooltip: downloading ? 'جارٍ تنزيل الكتاب' : offlineSaved ? 'النسخة محفوظة دون إنترنت' : 'تحميل الكتاب',
                     visualDensity: VisualDensity.compact,
                     constraints: const BoxConstraints.tightFor(width: 34, height: 30),
                     padding: EdgeInsets.zero,
-                    onPressed: onDownload,
-                    icon: Icon(Icons.download_rounded, size: 19, color: color),
+                    onPressed: downloading ? null : onDownload,
+                    icon: downloading
+                        ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                        : Icon(offlineSaved ? Icons.offline_pin_rounded : Icons.download_rounded, size: 19, color: offlineSaved ? teal : color),
                   ),
                   TextButton(
                     onPressed: onTap,
@@ -2115,15 +2390,17 @@ class EmptyState extends StatelessWidget {
 class QuizResult {
   final String grade;
   final String subject;
+  final String difficulty;
   final int score;
   final int total;
   final DateTime date;
-  const QuizResult({required this.grade, required this.subject, required this.score, required this.total, required this.date});
+  const QuizResult({required this.grade, required this.subject, this.difficulty = 'متوسط', required this.score, required this.total, required this.date});
   int get percent => total == 0 ? 0 : (score / total * 100).round();
-  Map<String, dynamic> toJson() => {'grade': grade, 'subject': subject, 'score': score, 'total': total, 'date': date.toIso8601String()};
+  Map<String, dynamic> toJson() => {'grade': grade, 'subject': subject, 'difficulty': difficulty, 'score': score, 'total': total, 'date': date.toIso8601String()};
   factory QuizResult.fromJson(Map<String, dynamic> json) => QuizResult(
     grade: json['grade'] as String? ?? grades.first,
     subject: json['subject'] as String? ?? 'مادة',
+    difficulty: json['difficulty'] as String? ?? 'متوسط',
     score: (json['score'] as num?)?.toInt() ?? 0,
     total: (json['total'] as num?)?.toInt() ?? 0,
     date: DateTime.tryParse(json['date'] as String? ?? '') ?? DateTime.now(),
@@ -2152,7 +2429,7 @@ class ProgressScreen extends StatelessWidget {
         else ...results.map((r) => Card(margin: const EdgeInsets.only(bottom: 9), child: ListTile(
           leading: CircleAvatar(backgroundColor: (r.percent >= 50 ? teal : Colors.orange).withOpacity(.12), child: Text('${r.percent}%', style: TextStyle(fontSize: 11, color: r.percent >= 50 ? teal : Colors.orange, fontWeight: FontWeight.bold))),
           title: Text('${r.subject} — ${r.grade}', style: const TextStyle(fontWeight: FontWeight.bold)),
-          subtitle: Text('الدرجة ${r.score} من ${r.total}  •  ${r.date.year}/${r.date.month}/${r.date.day}'),
+          subtitle: Text('المستوى ${r.difficulty} • الدرجة ${r.score} من ${r.total}  •  ${r.date.year}/${r.date.month}/${r.date.day}'),
           trailing: const Icon(Icons.chevron_left_rounded),
         ))),
         const SizedBox(height: 10),
@@ -2266,24 +2543,92 @@ class _StudyAssistantScreenState extends State<StudyAssistantScreen> {
   ));
 }
 
-class OfflineCenterScreen extends StatelessWidget {
+class OfflineCenterScreen extends StatefulWidget {
   final List<SchoolBook> books;
-  const OfflineCenterScreen({super.key, required this.books});
+  final ValueChanged<String>? onSaved;
+  final ValueChanged<String>? onDeleted;
+  const OfflineCenterScreen({super.key, required this.books, this.onSaved, this.onDeleted});
+
+  @override
+  State<OfflineCenterScreen> createState() => _OfflineCenterScreenState();
+}
+
+class _OfflineCenterScreenState extends State<OfflineCenterScreen> {
+  Future<List<offline.OfflineBookInfo>> _saved() => offline.loadOfflineBooks();
+  bool busy = false;
+
+  Future<void> _download(SchoolBook book) async {
+    if (book.url.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('رابط الكتاب غير متوفر.')));
+      return;
+    }
+    if (kIsWeb) {
+      final id = RegExp(r'/d/([^/?]+)').firstMatch(book.url)?.group(1);
+      final url = id == null ? book.url : 'https://drive.google.com/uc?export=download&id=$id';
+      await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('في المتصفح يبدأ تنزيل الملف من خلال المتصفح، أما حفظه داخل التطبيق باستخدام path_provider فيحتاج نسخة Android.')));
+      return;
+    }
+    setState(() => busy = true);
+    try {
+      await offline.saveBookOffline(key: book.key, title: book.title, grade: book.grade, subject: book.subject, url: book.url);
+      widget.onSaved?.call(book.key);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('تم حفظ ${book.title} دون إنترنت.')));
+        setState(() {});
+      }
+    } catch (e) {
+      if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل التنزيل: $e')));
+    } finally {
+      if (mounted) setState(() => busy = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final available = books.where((b) => b.url.isNotEmpty).toList();
+    final available = widget.books.where((b) => b.url.isNotEmpty).toList();
     return Directionality(textDirection: TextDirection.rtl, child: Scaffold(
       appBar: AppBar(title: const Text('التنزيلات والعمل دون إنترنت')),
-      body: ListView(padding: const EdgeInsets.all(18), children: [
-        Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          const Row(children: [Icon(Icons.offline_pin_rounded, color: teal, size: 28), SizedBox(width: 9), Expanded(child: Text('مركز الكتب المتاحة للتنزيل', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)))]),
-          const SizedBox(height: 10),
-          const Text('يمكن فتح رابط التنزيل وحفظ ملف PDF على جهازك، ثم قراءته من تطبيق الملفات دون إنترنت. لا تظهر هنا إلا الكتب التي أُضيفت لها روابط فعلية؛ الرابط التجريبي الحالي لكتاب واحد فقط، وتحتاج بقية الكتب إلى روابط PDF رسمية.', style: TextStyle(height: 1.6)),
-        ]))),
-        const SizedBox(height: 18),
-        if (available.isEmpty) const EmptyState(icon: Icons.cloud_off_rounded, title: 'لا توجد روابط تنزيل مضافة', subtitle: 'أضف روابط الكتب الرسمية حتى تظهر هنا.'),
-        ...available.map((b) => Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(leading: const Icon(Icons.picture_as_pdf_rounded, color: blue), title: Text('${b.title} — ${b.grade}'), subtitle: Text(b.subject), trailing: IconButton(tooltip: 'فتح رابط الكتاب', icon: const Icon(Icons.download_rounded), onPressed: () async { final id = RegExp(r'/d/([^/]+)').firstMatch(b.url)?.group(1); final url = id == null ? b.url : 'https://drive.google.com/uc?export=download&id=$id'; await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication); })))) ,
-      ]),
+      body: FutureBuilder<List<offline.OfflineBookInfo>>(
+        future: _saved(),
+        builder: (context, snapshot) {
+          final saved = snapshot.data ?? const <offline.OfflineBookInfo>[];
+          return ListView(padding: const EdgeInsets.all(18), children: [
+            Card(child: Padding(padding: const EdgeInsets.all(16), child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+              const Row(children: [Icon(Icons.offline_pin_rounded, color: teal, size: 28), SizedBox(width: 9), Expanded(child: Text('نسخ محفوظة على الجهاز', style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16)))]),
+              const SizedBox(height: 10),
+              Text(kIsWeb
+                  ? 'معاينة الويب تفتح تنزيلات المتصفح؛ أما حفظ PDF داخل مساحة التطبيق والرجوع إليه دون إنترنت فيتوفر في نسخة Android باستخدام path_provider.'
+                  : 'يمكنك حفظ الكتب هنا، ثم فتح النسخة المحلية حتى لو انقطع الإنترنت. إذا رفض Google Drive التنزيل، تأكد أن الملف متاح للجميع أو افتح الرابط أولاً.', style: const TextStyle(height: 1.6)),
+              const SizedBox(height: 8),
+              Text('الكتب المحفوظة: ${saved.length}', style: const TextStyle(color: teal, fontWeight: FontWeight.w800)),
+            ]))),
+            const SizedBox(height: 14),
+            if (snapshot.connectionState == ConnectionState.waiting) const Center(child: Padding(padding: EdgeInsets.all(16), child: CircularProgressIndicator())),
+            if (saved.isEmpty && !kIsWeb && snapshot.connectionState != ConnectionState.waiting)
+              const EmptyState(icon: Icons.cloud_off_rounded, title: 'لم تحفظ كتباً بعد', subtitle: 'اضغط زر التنزيل بجانب أي كتاب أدناه لحفظ نسخة PDF.'),
+            ...saved.map((b) => Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
+              leading: const Icon(Icons.picture_as_pdf_rounded, color: teal),
+              title: Text(b.title),
+              subtitle: Text('${b.grade} • ${b.subject} • محفوظ دون إنترنت'),
+              trailing: Wrap(spacing: 0, children: [
+                IconButton(tooltip: 'فتح النسخة المحفوظة', icon: const Icon(Icons.open_in_new_rounded), onPressed: () async { await offline.openOfflineBook(b.key); }),
+                IconButton(tooltip: 'حذف النسخة', icon: const Icon(Icons.delete_outline_rounded), onPressed: () async { await offline.deleteOfflineBook(b.key); widget.onDeleted?.call(b.key); if (mounted) setState(() {}); }),
+              ]),
+            ))),
+            const SizedBox(height: 20),
+            const SectionHeading(title: 'كتب متاحة للحفظ', subtitle: 'اختر الكتب التي تريد الاحتفاظ بها محلياً'),
+            const SizedBox(height: 10),
+            if (available.isEmpty) const EmptyState(icon: Icons.menu_book_outlined, title: 'لا توجد روابط حالياً', subtitle: 'تظهر هنا الكتب التي أضيفت لها روابط فعلية.'),
+            ...available.map((b) => Card(margin: const EdgeInsets.only(bottom: 8), child: ListTile(
+              leading: const Icon(Icons.picture_as_pdf_rounded, color: blue),
+              title: Text(b.title),
+              subtitle: Text('${b.grade} • ${b.subject}'),
+              trailing: IconButton(tooltip: 'تنزيل وحفظ دون إنترنت', icon: busy ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2)) : const Icon(Icons.download_rounded), onPressed: busy ? null : () => _download(b)),
+            ))),
+          ]);
+        },
+      ),
     ));
   }
 }
@@ -2297,18 +2642,19 @@ class QuizQuestion {
 
 // A starter bank of general practice questions. Official textbook alignment
 // requires importing the relevant Iraqi curriculum books.
-List<QuizQuestion> makeQuizQuestions(String grade, String subject) {
+List<QuizQuestion> makeQuizQuestions(String grade, String subject, {String difficulty = 'متوسط'}) {
   final bank = <QuizQuestion>[];
   if (subject == 'الرياضيات') {
     for (var i = 1; i <= 100; i++) {
-      final a = (i * 7) % 47 + 3;
-      final b = (i * 11) % 29 + 2;
+      final range = difficulty == 'سهل' ? 15 : difficulty == 'صعب' ? 150 : 47;
+      final a = (i * 7) % range + (difficulty == 'سهل' ? 1 : 3);
+      final b = (i * 11) % (difficulty == 'صعب' ? 99 : 29) + 2;
       final op = i % 4;
       late String q;
       late int ans;
       if (op == 0) { q = 'ما ناتج $a + $b ؟'; ans = a + b; }
       else if (op == 1) { final hi = a + b; q = 'ما ناتج $hi - $a ؟'; ans = b; }
-      else if (op == 2) { q = 'ما ناتج $a × ${i % 9 + 2} ؟'; ans = a * (i % 9 + 2); }
+      else if (op == 2) { final factor = difficulty == 'سهل' ? i % 4 + 2 : difficulty == 'صعب' ? i % 19 + 2 : i % 9 + 2; q = 'ما ناتج $a × $factor ؟'; ans = a * factor; }
       else { final divisor = i % 8 + 2; final value = divisor * (i % 12 + 2); q = 'ما ناتج $value ÷ $divisor ؟'; ans = value ~/ divisor; }
       final opts = <int>{ans, ans + 1, ans - 1, ans + 3}.toList();
       while (opts.length < 4) { opts.add(ans + opts.length + 2); }
@@ -2417,10 +2763,135 @@ List<QuizQuestion> makeQuizQuestions(String grade, String subject) {
   return bank;
 }
 
+class FlashcardsPage extends StatefulWidget {
+  final String initialGrade;
+  const FlashcardsPage({super.key, this.initialGrade = 'الأول الابتدائي'});
+
+  @override
+  State<FlashcardsPage> createState() => _FlashcardsPageState();
+}
+
+class _FlashcardsPageState extends State<FlashcardsPage> {
+  late String grade;
+  late String subject;
+  late List<QuizQuestion> cards;
+  int index = 0;
+  bool flipped = false;
+
+  @override
+  void initState() {
+    super.initState();
+    grade = grades.contains(widget.initialGrade) ? widget.initialGrade : grades.first;
+    subject = gradeSubjectsFor(grade).first;
+    _loadCards();
+  }
+
+  void _loadCards() {
+    final all = makeQuizQuestions(grade, subject, difficulty: 'متوسط');
+    final seen = <String>{};
+    cards = all.where((q) => seen.add(q.text)).take(60).toList();
+    cards.shuffle();
+    index = 0;
+    flipped = false;
+  }
+
+  void _changeGrade(String value) {
+    setState(() {
+      grade = value;
+      final subjects = gradeSubjectsFor(grade);
+      if (!subjects.contains(subject)) subject = subjects.first;
+      _loadCards();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final q = cards[index];
+    final answer = q.choices[q.answer];
+    return Directionality(
+      textDirection: TextDirection.rtl,
+      child: Scaffold(
+        appBar: AppBar(title: const Text('بطاقات المراجعة')),
+        body: ListView(
+          padding: const EdgeInsets.all(18),
+          children: [
+            const SectionHeading(title: 'مراجعة بالاسترجاع النشط', subtitle: 'فكّر بالإجابة ثم اقلب البطاقة للتحقق منها'),
+            const SizedBox(height: 16),
+            DropdownButtonFormField<String>(
+              value: grade,
+              decoration: const InputDecoration(labelText: 'الصف الدراسي'),
+              items: grades.map((g) => DropdownMenuItem(value: g, child: Text(g))).toList(),
+              onChanged: (v) { if (v != null) _changeGrade(v); },
+            ),
+            const SizedBox(height: 12),
+            DropdownButtonFormField<String>(
+              value: subject,
+              decoration: const InputDecoration(labelText: 'المادة'),
+              items: gradeSubjectsFor(grade).map((s) => DropdownMenuItem(value: s, child: Text(s))).toList(),
+              onChanged: (v) { if (v != null) setState(() { subject = v; _loadCards(); }); },
+            ),
+            const SizedBox(height: 14),
+            Row(children: [
+              Expanded(child: Text('البطاقة ${index + 1} من ${cards.length}', style: const TextStyle(fontWeight: FontWeight.w800))),
+              Text('${subject}', style: TextStyle(color: subjectColor(subject), fontWeight: FontWeight.w800)),
+            ]),
+            const SizedBox(height: 9),
+            LinearProgressIndicator(value: (index + 1) / cards.length, minHeight: 6),
+            const SizedBox(height: 18),
+            GestureDetector(
+              onTap: () => setState(() => flipped = !flipped),
+              child: AnimatedSwitcher(
+                duration: const Duration(milliseconds: 260),
+                transitionBuilder: (child, animation) => ScaleTransition(scale: animation, child: child),
+                child: Container(
+                  key: ValueKey('${index}_$flipped'),
+                  constraints: const BoxConstraints(minHeight: 300),
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topRight,
+                      end: Alignment.bottomLeft,
+                      colors: flipped ? [const Color(0xFFE0F7EF), const Color(0xFFCCF0E6)] : [const Color(0xFFE5ECFF), const Color(0xFFF2F5FF)],
+                    ),
+                    borderRadius: BorderRadius.circular(28),
+                    border: Border.all(color: (flipped ? teal : blue).withOpacity(.22)),
+                    boxShadow: [BoxShadow(color: Colors.black.withOpacity(.04), blurRadius: 24, offset: const Offset(0, 10))],
+                  ),
+                  child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+                    Icon(flipped ? Icons.check_circle_rounded : Icons.style_rounded, size: 36, color: flipped ? teal : blue),
+                    const SizedBox(height: 20),
+                    Text(flipped ? 'الإجابة' : 'السؤال', style: TextStyle(color: flipped ? teal : blue, fontWeight: FontWeight.w900)),
+                    const SizedBox(height: 12),
+                    Text(flipped ? answer : q.text, textAlign: TextAlign.center, style: TextStyle(fontSize: 22, fontWeight: FontWeight.w900, height: 1.5, color: Colors.blueGrey.shade900)),
+                    const SizedBox(height: 22),
+                    Text(flipped ? 'اضغط للعودة إلى السؤال' : 'اضغط على البطاقة لإظهار الإجابة', style: TextStyle(color: Colors.blueGrey.shade700, fontSize: 12)),
+                  ]),
+                ),
+              ),
+            ),
+            const SizedBox(height: 18),
+            Row(children: [
+              Expanded(child: OutlinedButton.icon(onPressed: index == 0 ? null : () => setState(() { index--; flipped = false; }), icon: const Icon(Icons.chevron_right_rounded), label: const Text('السابقة'))),
+              const SizedBox(width: 10),
+              Expanded(child: FilledButton.icon(onPressed: () => setState(() { flipped = !flipped; }), icon: const Icon(Icons.flip_rounded), label: Text(flipped ? 'إخفاء الجواب' : 'اقلب البطاقة'))),
+              const SizedBox(width: 10),
+              Expanded(child: OutlinedButton.icon(onPressed: index >= cards.length - 1 ? null : () => setState(() { index++; flipped = false; }), icon: const Icon(Icons.chevron_left_rounded), label: const Text('التالية'))),
+            ]),
+            const SizedBox(height: 12),
+            Text('تستخدم البطاقات بنك الأسئلة التدريبي الحالي. يمكن توسيعها لاحقاً بمفاهيم وأجوبة موثقة من كتب كل صف.', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant, fontSize: 12, height: 1.5)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class QuizScreen extends StatefulWidget {
   final String grade;
   final String subject;
-  const QuizScreen({super.key, required this.grade, required this.subject});
+  final String difficulty;
+  const QuizScreen({super.key, required this.grade, required this.subject, this.difficulty = 'متوسط'});
   @override
   State<QuizScreen> createState() => _QuizScreenState();
 }
@@ -2434,10 +2905,12 @@ class _QuizScreenState extends State<QuizScreen> {
   @override
   void initState() {
     super.initState();
-    questions = makeQuizQuestions(widget.grade, widget.subject);
+    final allQuestions = makeQuizQuestions(widget.grade, widget.subject, difficulty: widget.difficulty)..shuffle();
+    final questionCount = widget.difficulty == 'سهل' ? 10 : widget.difficulty == 'صعب' ? 50 : 25;
+    questions = allQuestions.take(questionCount).toList();
   }
   int get score => answers.entries.where((e) => questions[e.key].answer == e.value).length;
-  void next() {
+  Future<void> next() async {
     if (!answers.containsKey(index)) {
       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('اختر إجابة أولاً')));
       return;
@@ -2446,11 +2919,13 @@ class _QuizScreenState extends State<QuizScreen> {
       quizHistory.add(QuizResult(
         grade: widget.grade,
         subject: widget.subject,
+        difficulty: widget.difficulty,
         score: score,
         total: questions.length,
         date: DateTime.now(),
       ));
-      saveQuizHistory();
+      await saveQuizHistory();
+      if (!mounted) return;
       setState(() => finished = true);
     } else {
       setState(() => index++);
@@ -2462,7 +2937,7 @@ class _QuizScreenState extends State<QuizScreen> {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
-        appBar: AppBar(title: Text('اختبار ${widget.subject}')),
+        appBar: AppBar(title: Text('اختبار ${widget.subject} • ${widget.difficulty}')),
         body: finished ? (reviewing ? _reviewAnswers() : _result()) : ListView(
           padding: const EdgeInsets.all(18),
           children: [
