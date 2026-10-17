@@ -1,77 +1,45 @@
 
-name: Build APK
+name: Build Android APK
 
 on:
-  push:
-    branches: [ main, master ]
   workflow_dispatch:
+  push:
+    branches:
+      - main
+      - master
 
 jobs:
   build:
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install Java
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y openjdk-17-jdk
-          java -version
-
       - name: Setup Flutter
-        run: |
-          git clone https://github.com/flutter/flutter.git \
-            --branch 3.19.0 --depth 1 "$HOME/flutter"
-          echo "$HOME/flutter/bin" >> "$GITHUB_PATH"
-          "$HOME/flutter/bin/flutter" --version
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.19.6'
+          channel: stable
+          cache: true
 
-      - name: Create Android Platform Files
-        run: |
-          flutter create . \
-            --org com.school.books \
-            --project-name school_app \
-            --platforms=android
-
-      - name: Add Internet Permission
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          p = Path("android/app/src/main/AndroidManifest.xml")
-          text = p.read_text()
-
-          permission = (
-              '<uses-permission '
-              'android:name="android.permission.INTERNET" />'
-          )
-
-          if "android.permission.INTERNET" not in text:
-              text = text.replace(
-                  "<application",
-                  permission + "\n    <application",
-                  1
-              )
-
-          p.write_text(text)
-          print("AndroidManifest.xml updated")
-          PY
-
-      - name: Configure Android SDK
-        run: |
-          sed -i 's/minSdkVersion flutter.minSdkVersion/minSdkVersion 21/g' android/app/build.gradle || true
-          sed -i 's/targetSdkVersion flutter.targetSdkVersion/targetSdkVersion 34/g' android/app/build.gradle || true
-          sed -i 's/compileSdkVersion flutter.compileSdkVersion/compileSdkVersion 34/g' android/app/build.gradle || true
+      - name: Show Flutter version
+        run: flutter --version
 
       - name: Get dependencies
+        run: flutter pub get
+
+      - name: Create Android project files
+        run: flutter create . --platforms=android
+
+      - name: Get dependencies again
         run: flutter pub get
 
       - name: Build APK
         run: flutter build apk --release
 
-      - name: Upload APK Artifact
+      - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: app-release
+          name: iraqi-curriculum-library-apk
           path: build/app/outputs/flutter-apk/app-release.apk
